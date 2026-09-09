@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent workspace directories created by init_teams.py in test runs
+green_amber_red_teams/
+
+# Question protocol runtime state (conversation counter, open questions)
+question-protocol/state.json

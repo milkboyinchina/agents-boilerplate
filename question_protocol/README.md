@@ -5,7 +5,7 @@ A portable, zero-dependency convention for concise multi-question turns: agents 
 Unlike ad-hoc questioning, this protocol is **conversation-scoped and compaction-safe**:
 - `Q1, Q2...` never reuse mid-conversation — skipped questions stay answerable later.
 - `Q1: / Q1. / Q1=` free-form aliases, case-insensitive options, `skip Qn` support.
-- Counter survives compaction via `question_protocol/state.json` + transcript scan.
+- Counter survives compaction via `question_workspace/state.json` + transcript scan.
 - Re-baseline at >99 closed questions, only on user approval.
 
 ---
@@ -46,12 +46,13 @@ Or tell your agent:
 
 ```
 <project-root>/
-└── question_protocol/
+├── question_workspace/                 # RUNTIME (gitignored)
+│   └── state.json                      # counter + open questions (created on first ask)
+└── question_protocol/                  # SOURCE (committed): CLI + docs + templates
     ├── init_questions.py               # bootstrap + validator CLI
     ├── README.md                       # this file
     ├── QUESTION_PROTOCOL.md            # full specification
     ├── SKILL.md                        # agent skill definition
-    ├── state.json                      # counter + open questions (gitignored, created on first ask)
     ├── templates/
     │   ├── question_block.md           # agent-side ask template
     │   └── answer_block.md             # user-side reply template
@@ -104,7 +105,7 @@ python3 question_protocol/init_questions.py --validate <file>
 
 ## 🔗 Relationship to Other Boilerplates
 
-* `green_amber_red_teams`: `amber-check` confirmations MUST use `Q1-a) Yes / Q1-b) No`.
+* `green_amber_red_workspace`: `execute-amberteam` confirmations MUST use `Q1-a) Yes / Q1-b) No`.
 * `handoff_protocol`: include Open Questions (`Qn` + status) in handoff files for resume recovery.
 
 ---

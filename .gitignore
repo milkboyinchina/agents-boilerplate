@@ -21,11 +21,11 @@ ENV/
 Thumbs.db
 
 # Agent workspace directories created by init_teams.py in test runs
-green_amber_red_teams/
+green_amber_red_workspace/
 
 # Question protocol runtime state (conversation counter, open questions)
-question_protocol/state.json
+question_workspace/state.json
 
 # Tier routing runtime state (weekly heartbeat + task pins)
-tier_routing_protocol/heartbeat.json
-tier_routing_protocol/routing_state.json
+tier_routing_workspace/heartbeat.json
+tier_routing_workspace/routing_state.json

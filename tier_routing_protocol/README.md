@@ -54,13 +54,14 @@ Or tell your agent:
 
 ```
 <project-root>/
-├── .gitignore                              # += heartbeat.json + routing_state.json (init-managed)
-└── tier_routing_protocol/
+├── .gitignore                              # += tier_routing_workspace/* (init-managed)
+├── tier_routing_workspace/                 # RUNTIME (gitignored): heartbeat + pins
+│   ├── heartbeat.json                      # weekly cron output
+│   └── routing_state.json                  # task pins
+└── tier_routing_protocol/                  # SOURCE (committed): CLI + registry + docs
     ├── resolve_model.py                    # resolver + registry maintenance CLI
     ├── routing.yaml                        # THE registry (only raw IDs live here)
     ├── README.md / TIER_ROUTING.md / SKILL.md
-    ├── routing_state.json                  # task pins (gitignored, runtime)
-    ├── heartbeat.json                      # weekly cron output (gitignored, runtime)
     ├── routing_updates/pending-*.md        # refresh proposals (committed, review trail)
     ├── templates/
     │   ├── plan_tier_row.md                # Tier column snippet for plan.md
@@ -124,7 +125,7 @@ Routing can be switched off per workspace or per tool — e.g. temporarily hand-
 
 ## 🔗 Relationship to Other Boilerplates
 
-* `green_amber_red_teams`: Tier column in `plan.md` task table; Amber resolves pre-execution.
+* `green_amber_red_workspace`: Tier column in `plan.md` task table; Amber resolves pre-execution.
 * `handoff_protocol`: record tier + resolved ID + active pin for resume recovery.
 * `question_protocol`: refresh approvals + no-models-file branches are `Q1/Q1-a` turns.
 

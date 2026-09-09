@@ -25,4 +25,4 @@ rm ~/Library/LaunchAgents/com.tierrouting.heartbeat.plist
 # or: python3 <workspace>/tier_routing_protocol/resolve_model.py --uninstall-cron
 ```
 
-The job's sole output is `tier_routing_protocol/heartbeat.json` (gitignored).
+The job's sole output is `tier_routing_workspace/heartbeat.json` (gitignored).

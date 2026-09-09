@@ -31,13 +31,19 @@ import subprocess
 import sys
 from pathlib import Path
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 PROTOCOL_DIR = "tier_routing_protocol"
+WORKSPACE_DIR = "tier_routing_workspace"
 REGISTRY_NAME = "routing.yaml"
 STATE_NAME = "routing_state.json"
 HEARTBEAT_NAME = "heartbeat.json"
-UPDATES_DIR = "routing_updates"
+UPDATES_DIR = "routing_updates"  # review trail: stays in SOURCE (committed), only heartbeat/state move out
+# Pre-split runtime files (sat directly under tier_routing_protocol/). Frozen:
+# detected (with mv hint), never written.
+# NOTE: repo-wide renames must EXCLUDE these two lines.
+LEGACY_HEARTBEAT_PATH = f"{PROTOCOL_DIR}/{HEARTBEAT_NAME}"
+LEGACY_STATE_PATH = f"{PROTOCOL_DIR}/{STATE_NAME}"
 STALE_AFTER_DAYS = 30
 HEARTBEAT_STALE_DAYS = 10
 CRON_MARKER = "tier-routing-heartbeat"
@@ -59,7 +65,7 @@ DIRECTIVE_BLOCK = """\n\
 2. **Resolve at runtime**: `python3 tier_routing_protocol/resolve_model.py --tier <T> --tool <name> --task <id>`. Raw IDs live only in `routing.yaml` `aliases:`.
 3. **Precedence (later wins, always logged)**: tier default → `--force-tier` → `MODEL_ROUTE_OVERRIDE` → task pin (`/pin-model <alias>`, auto-releases on `[COMPLETED]`, `/unpin` releases early). No session pin exists.
 4. **Failover, never hard-fail**: dead IDs fall down `fallbacks:` chains with a loud warning.
-5. **Freshness**: weekly dumb cron writes `heartbeat.json` (sole cron output, gitignored); drift triggers a pending proposal + `Q1-a` approval turn. Stale heartbeat (>10d) = unknown, check live.
+5. **Freshness**: weekly dumb cron writes `tier_routing_workspace/heartbeat.json` (sole cron output, gitignored); drift triggers a pending proposal + `Q1-a` approval turn. Stale heartbeat (>10d) = unknown, check live.
 """.strip() + "\n"
 
 
@@ -154,6 +160,42 @@ def _resolve_proto_dir(root: Path) -> Path:
     if root.name == PROTOCOL_DIR:
         return root
     return root / PROTOCOL_DIR
+
+
+def _workspace_dir(root: Path) -> Path:
+    return root / WORKSPACE_DIR
+
+
+def _legacy_file_present(root: Path, rel: str, keys: tuple[str, ...]) -> bool:
+    # The boilerplate copy shares legacy paths — only treat as legacy runtime
+    # when the file actually holds data (non-empty JSON dict with known keys).
+    path = root / rel
+    if not path.exists():
+        return False
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    return isinstance(data, dict) and bool(data) and any(k in data for k in keys)
+
+
+def _legacy_found(root: Path) -> list[str]:
+    found = []
+    if _legacy_file_present(root, LEGACY_HEARTBEAT_PATH, ("last_check", "tools")):
+        found.append(LEGACY_HEARTBEAT_PATH)
+    if _legacy_file_present(root, LEGACY_STATE_PATH, ("pins",)):
+        found.append(LEGACY_STATE_PATH)
+    return found
+
+
+def _warn_legacy(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under --check --json.
+    found = _legacy_found(root)
+    if found:
+        print(f"[WARN] legacy runtime file(s) {', '.join(found)} found (pre-split layout). "
+              "Migrate: mkdir -p tier_routing_workspace; "
+              "mv <file> tier_routing_workspace/; "
+              "swap the .gitignore lines to tier_routing_workspace/.", file=sys.stderr)
 
 
 def _today() -> datetime.date:
@@ -259,7 +301,11 @@ def enabled_state(reg: dict, tool: str | None = None) -> tuple[bool, str]:
 
 
 def _state_path(root: Path) -> Path:
-    return _resolve_proto_dir(root) / STATE_NAME
+    return _workspace_dir(root) / STATE_NAME
+
+
+def _heartbeat_path(root: Path) -> Path:
+    return _workspace_dir(root) / HEARTBEAT_NAME
 
 
 def _read_state(root: Path) -> dict:
@@ -387,8 +433,8 @@ def run_heartbeat(root: Path, *, quiet: bool, registry_path: str | None = None) 
         for e in errors:
             print(f"  - {e}")
         return 1
-    proto = _resolve_proto_dir(root)
-    hb_path = proto / HEARTBEAT_NAME
+    _workspace_dir(root).mkdir(parents=True, exist_ok=True)
+    hb_path = _heartbeat_path(root)
     prev: dict = {}
     try:
         prev = json.loads(hb_path.read_text(encoding="utf-8")) if hb_path.exists() else {}
@@ -417,7 +463,6 @@ def run_heartbeat(root: Path, *, quiet: bool, registry_path: str | None = None) 
             drift = True
     hb = {"last_check": datetime.datetime.now().astimezone().isoformat(),
           "tools": tools_out}
-    proto.mkdir(parents=True, exist_ok=True)
     hb_path.write_text(json.dumps(hb, indent=2) + "\n", encoding="utf-8")
     _log(f"[HEARTBEAT] {hb_path} ({ok_count} tool(s) read)", quiet=quiet)
     if ok_count == 0:
@@ -435,7 +480,7 @@ def run_refresh(root: Path, *, dry_run: bool, quiet: bool, registry_path: str | 
         return 1
     proto = _resolve_proto_dir(root)
     try:
-        hb = json.loads((proto / HEARTBEAT_NAME).read_text(encoding="utf-8"))
+        hb = json.loads(_heartbeat_path(root).read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         print("refresh: no heartbeat found — run `resolve_model.py heartbeat` (or --install-cron) first.")
         return 1
@@ -486,7 +531,7 @@ def run_refresh(root: Path, *, dry_run: bool, quiet: bool, registry_path: str | 
 # Bootstrap: gitignore, directives, scheduler install
 # ---------------------------------------------------------------------------
 
-RUNTIME_GITIGNORE_LINES = [f"{PROTOCOL_DIR}/{HEARTBEAT_NAME}", f"{PROTOCOL_DIR}/{STATE_NAME}"]
+RUNTIME_GITIGNORE_LINES = [f"{WORKSPACE_DIR}/{HEARTBEAT_NAME}", f"{WORKSPACE_DIR}/{STATE_NAME}"]
 
 
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
@@ -632,6 +677,7 @@ def uninstall_cron(root: Path, *, quiet: bool) -> int:
 # ---------------------------------------------------------------------------
 
 def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int, registry_path: str | None = None) -> dict:
+    _warn_legacy(root)
     reg, errors = load_registry(root, registry_path)
     proto = _resolve_proto_dir(root)
     gi_lines = _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else []
@@ -641,6 +687,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
                 for name in reg.get("tools", {}).keys()}
     result: dict = {
         "protocol_dir": str(proto),
+        "workspace_dir": str(_workspace_dir(root)),
         "registry_ok": not errors,
         "registry_errors": errors,
         "enabled": {"workspace": ws_on, "source": ws_src},
@@ -649,6 +696,8 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
         "alias_count": len(reg.get("aliases", {})),
         "stale_warnings": stale_report(reg, stale_after=stale_after),
         "state_exists": _state_path(root).exists(),
+        "heartbeat_exists": _heartbeat_path(root).exists(),
+        "legacy_runtime_found": _legacy_found(root),
         "active_pins": _read_state(root).get("pins", {}),
         "gitignore_ok": all(ln in gi_lines for ln in RUNTIME_GITIGNORE_LINES),
         "cron_present": cron_present(root),
@@ -699,8 +748,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     pin_p = sub.add_parser("pin", help="Pin an alias to a task (auto-releases on completion).")
     pin_p.add_argument("alias", help="Portable alias from routing.yaml.")
     pin_p.add_argument("--task", required=True, help="Task ID to bind the pin to.")
+    pin_p.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
     unpin_p = sub.add_parser("unpin", help="Release a task pin early.")
     unpin_p.add_argument("--task", required=True, help="Task ID to release.")
+    unpin_p.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
     hb_p = sub.add_parser("heartbeat", help="Write heartbeat.json from models files (dumb cron).")
     hb_p.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
     ref_p = sub.add_parser("refresh", help="Propose registry updates from heartbeat drift (never applies).")

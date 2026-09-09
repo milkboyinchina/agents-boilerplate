@@ -4,6 +4,73 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📁 [2026-09-10] Q40-b: Source/`*_workspace/` Split for Handoff, Question, Tier
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Uniform rule, no exceptions: `handoff_protocol/` → runtime `handoff_workspace/`; `question_protocol/state.json` → `question_workspace/state.json`; tier heartbeat/state → `tier_routing_workspace/` (`routing_updates/` stays committed in source).
+  - Each CLI: version bump, legacy-dir/file detection with `mv` hints (stderr-safe JSON), template/config loads repointed at source, gitignore lines swapped, `--check` gains workspace + legacy keys.
+  - Fixes found live: handoff legacy check false-positived on the source copy (now requires handoff artifacts); `pin`/`unpin` rejected `--quiet`; heartbeat crashed on a stale `proto` reference.
+  - Docs swept (layouts, paths, checklists); governance already exception-free; `CHANGELOG.md` history frozen.
+  - Migration prompts (ERP/sandbox): handoff rescue artifacts → `handoff_workspace/` + refresh copy; question/tier `mkdir` + `mv` + gitignore swap (all in CLI warnings).
+- **Quality & Verification Results**:
+  - `py_compile` ×4; old-runtime-path grep zero outside history (only intentional migration-hint strings remain).
+  - Handoff: fresh start→resume→done→status on `handoff_workspace/`, second start idempotent, template loads from source copy.
+  - Question: init + migrated `next_id` preserved, gitignore + directives OK, good fixture validates.
+  - Tier: resolve/pin/heartbeat/refresh/stale-fixture all green on new paths; `--install` writes new gitignore lines.
+  - Green init smoke unaffected (only docs changed this round for green).
+
+---
+
+## 🚦 [2026-09-09] Green Runtime Rename (unmistakable source/runtime split)
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Runtime `green_amber_red_teams/` → `green_amber_red_workspace/` (`WORKSPACE_DIR`; source folder untouched). One-letter source/runtime similarity retired as a defect class.
+  - `init_teams.py`: legacy-dir detection in `--check` (`legacy_workspace_found` + `mv` hint, one-version grace).
+  - Swept all runtime refs (docs, handoff plan-detect, battery, `.gitignore:24`); source refs intact.
+  - Governance: authoring rules + checklist now require unmistakably distinct runtime names.
+  - Migration prompt (ERP/sandbox): `mv green_amber_red_teams green_amber_red_workspace`, re-run init, drop the stale gitignore line by hand.
+- **Quality & Verification Results**:
+  - Caught live during verify: sweep had overwritten `LEGACY_WORKSPACE_DIR` (self-match) + legacy WARN polluted `--json` stdout — both fixed (exclusion note in code, WARN → stderr).
+  - Green temp lifecycle on new path (plan + ledger + skeleton + packet gitignore, idempotent); legacy demo warns + JSON stays clean; red temp lifecycle skeleton-only.
+  - `py_compile` ×4, other three CLIs sanity-green, old-runtime-name grep zero outside history.
+
+---
+
+## 🚦 [2026-09-09] Green Protocol: Defect Ledger with Who/When Lifecycle
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - New `templates/defect_ledger.md` + live green-side `green_amber_red_teams/defects.md` (runtime, gitignored; init-created, never overwritten).
+  - Single-writer-per-field: red findings via reports only, green transcribes + owns fix fields; lifecycle `OPEN→ACKED→IN_FIX→FIXED→VERIFIED→CLOSED` all stamped; IDs `BUG-YYYYMMDD-NNN`; reopening creates a new row.
+  - Wired into `review-redteam` (transcribe/reconcile), `recheck-redteam` (snapshot diff), verify checklist, `--check` (`ledger_exists`), SKILL criteria, ERP adapter mapping table.
+- **Quality & Verification Results**:
+  - Authorship grep: every `defects.md` mention enforces green-side/red-never-writes; `py_compile` green.
+  - Green temp lifecycle: ledger created from template; appended row survived re-run (never-overwrite guard); `--check` `ledger_exists: true`.
+  - Red temp lifecycle (`--side red` fresh): no workspace, no ledger, skeleton true.
+
+---
+
+## 🚦 [2026-09-09] Green Protocol: 10-Command Rename + Red Packet System
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Folder `green_amber_red_teams_protocol/` → `green_amber_red_team_protocol/` (singular `team`); runtime `green_amber_red_teams/` frozen.
+  - 10 commands + aliases: `plan-greenteam`/`plan-green`, `review-greenteam`/`review-green` (agent-agnostic plan QA), `execute-amberteam`/`exec-amber` (confirm gate preserved), `review-amberteam`/`review-amber`, `send-redteam`/`send-red`, `verify-green-amber-red-team`, `review-redteam`/`review-red`, `test-redteam`/`test-red`, `finish-redteam`/`finish-red`, `recheck-redteam`/`recheck-red`. `check-plan` removed (read plan directly; drift via verify).
+  - Packet exchange: `redteam/` layout both sides, `packet_green|red_YYYYMMDD_HHMM`, cross-ack handshake, append-only-same-cycle, air-gap carry paths, plan-version citation, `config.yml` (`side:`, reachability, kill switch, `return_to:`).
+  - `init_teams.py` v1.1.0: `--side green|red`, redteam skeleton + stamped config, packet-contents gitignore (init-emitted in targets), side-aware `--check`, wrong-side refusal doctrine in specs.
+  - Mission brief + defect-report templates (version-stamped); sequential dual-red + risk-tiered isolation documented; QC-layers rule (Layer 3 on user-facing/risky/privacy-sensitive).
+  - Mirrors: README (command table, lifecycle, redteam section, QC layers), INITIALIZE, SKILL, root README, question refs, AGENTS.md command-naming rule, checklist + CONTRIBUTING hygiene notes.
+  - ERP migration prompt: copy renamed folder over, re-run init both sides (`--side red` in sandbox), delete old folder, re-point custom triggers (`read-fix`/`amber-code` unaffected — brief maps them).
+- **Quality & Verification Results**:
+  - `py_compile` ×4 green CLIs + others green; old-name grep zero outside history (both alias forms present everywhere).
+  - Green temp lifecycle: `--init-plan` → plan created; `--check` reports side green, skeleton + packet gitignore OK; re-run idempotent (`[SKIP]`/`[OK]`).
+  - Red temp lifecycle: `--side red` fresh → no plan workspace, skeleton + `side: red` config + packet gitignore; side switch green→red updates config only.
+  - `--check` JSON carries `side`, `packet_gitignore_ok`, `redteam_skeleton_ok` on both sides.
+
+---
+
 ## 🚦 [2026-09-09] Green Protocol: Red Team Handoff Ownership + Verdict Flow
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

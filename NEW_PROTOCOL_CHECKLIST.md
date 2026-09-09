@@ -8,6 +8,7 @@ Follow this checklist when adding a boilerplate to this collection. It encodes t
 
 - [ ] Folder name: spaces become `_`, always append `_protocol` (e.g. `tier_routing_protocol/`).
 - [ ] Never kebab-case, never a bare name without the `_protocol` suffix.
+- [ ] Runtime state dir (if any) unmistakably distinct from the source folder — never one letter apart.
 - [ ] CLI entry point lives at `<folder>/<verb>_<noun>.py` (e.g. `resolve_model.py`).
 
 ## 2. Required files
@@ -28,6 +29,7 @@ Follow this checklist when adding a boilerplate to this collection. It encodes t
 ## 4. Runtime hygiene
 
 - [ ] Bootstrap CLI gitignores its runtime files at init (idempotent); source stays committed.
+- [ ] Exchange/packet contents (diffs, binaries, reports) are gitignored per-directory-contents (`<dir>/*`), never whole-folder when the folder also holds tracked templates/config.
 - [ ] `--check` reports gitignore status; cron/scheduler presence where applicable.
 - [ ] No raw secrets, no model IDs, no machine-specific paths in committed files.
 

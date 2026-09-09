@@ -65,7 +65,7 @@ Every resolve prints which layer won: `resolved claude-opus via pin[task-3]`. A 
 
 ## 6. Freshness without sessions (weekly dumb cron + change-triggered propose)
 
-* **Dumb cron (~zero tokens):** a plain script follows each tool's `discover: {models_file: <path>}` hint, hashes the live ID lists, and overwrites exactly one file: `tier_routing_protocol/heartbeat.json` (gitignored). Exit `0` written / `2` drift vs previous heartbeat / `1` all tools failed.
+* **Dumb cron (~zero tokens):** a plain script follows each tool's `discover: {models_file: <path>}` hint, hashes the live ID lists, and overwrites exactly one file: `tier_routing_workspace/heartbeat.json` (gitignored). Exit `0` written / `2` drift vs previous heartbeat / `1` all tools failed.
 * **Agent read (one file, ~zero tokens):** hash matches registry → done. Hash drifted → agent diffs, writes `routing_updates/pending-YYYYMMDD.md` (committed), and asks the Q9-a approval turn (`Q1. Apply? Q1-a) Yes`). Only deltas are edited; `verified:` dates bumped; `--validate` must pass before landing.
 * **Stale heartbeat = unknown:** `last_check` older than ~10 days (host asleep, cron dead) → agent checks live directly instead of trusting it.
 * **Cron proposes, never applies.** The weekly job cannot corrupt, conflict with, or dirty anything reviewable.
@@ -106,8 +106,8 @@ Every path is wrapped: on failure (or skip), init prints the exact manual comman
 
 Bootstrap appends (idempotent, skip-if-present):
 
-* `tier_routing_protocol/heartbeat.json` — weekly cron output.
-* `tier_routing_protocol/routing_state.json` — pins + resolver state.
+* `tier_routing_workspace/heartbeat.json` — weekly cron output.
+* `tier_routing_workspace/routing_state.json` — pins + resolver state.
 
 The folder itself stays committed. `routing_updates/pending-*.md` stays committed (review trail). Remove the lines from `.gitignore` if you want runtime state versioned. `--check` reports `gitignore_ok`.
 

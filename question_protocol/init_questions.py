@@ -21,11 +21,15 @@ import re
 import sys
 from pathlib import Path
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 PROTOCOL_DIR = "question_protocol"
+WORKSPACE_DIR = "question_workspace"
 STATE_NAME = "state.json"
 REBASELINE_THRESHOLD = 99
+# Pre-split state location. Frozen intentionally: detected (with mv hint), never written.
+# NOTE: repo-wide renames must EXCLUDE this line.
+LEGACY_STATE_PATH = f"{PROTOCOL_DIR}/{STATE_NAME}"
 
 AGENT_DIRECTIVE_FILES = [
     "AGENTS.md",
@@ -42,7 +46,7 @@ DIRECTIVE_BLOCK = """\n\
 3. **Free-form override**: accept `Qn: <text>` / `Qn. <text>` / `Qn= <text>` as aliases. Multi-select: `Q1-a,c` or `Q1-a+c`. Skip: `Qn: skip` / `skip Qn` (stays OPEN).
 4. **Re-list Open + New** with full text every ask; max 4 open. Late answers by original number MUST resolve.
 5. **Long sessions**: at >99 closed questions, PROPOSE `Archive Q1-Q99 and re-baseline to Q1?` — only on approval (archived refs `E1-Q5`).
-6. **Compaction**: persist `question_protocol/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list open Qs.
+6. **Compaction**: persist `question_workspace/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list open Qs.
 """.strip() + "\n"
 
 # Matches E2-Q12-a, Q3, q1-B, Q4: text, Q5. text, Q6= text, skip Q7
@@ -81,8 +85,34 @@ def _resolve_protocol_dir(root: Path) -> Path:
     return root / PROTOCOL_DIR
 
 
+def _workspace_dir(root: Path) -> Path:
+    return root / WORKSPACE_DIR
+
+
 def _state_path(root: Path) -> Path:
-    return _resolve_protocol_dir(root) / STATE_NAME
+    return _workspace_dir(root) / STATE_NAME
+
+
+def _is_legacy_state(root: Path) -> bool:
+    # The boilerplate copy shares the legacy path — only treat it as legacy
+    # state when the file actually holds counter data (non-empty JSON object).
+    legacy = root / LEGACY_STATE_PATH
+    if not legacy.exists():
+        return False
+    try:
+        data = json.loads(legacy.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    return isinstance(data, dict) and bool(data)
+
+
+def _warn_legacy(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under --check --json.
+    if _is_legacy_state(root):
+        print(f"[WARN] legacy state {root / LEGACY_STATE_PATH} found. "
+              "Migrate: mkdir -p question_workspace; "
+              "mv question_protocol/state.json question_workspace/state.json; "
+              "swap the .gitignore line to question_workspace/state.json.", file=sys.stderr)
 
 
 def _read_state(root: Path) -> dict:
@@ -102,7 +132,7 @@ def detect_agent_files(root: Path) -> list[str]:
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
     """Gitignore runtime counter state in target workspaces (opt out by deleting the line)."""
     gitignore = root / ".gitignore"
-    line = f"{PROTOCOL_DIR}/{STATE_NAME}"
+    line = f"{WORKSPACE_DIR}/{STATE_NAME}"
     if line in _read_text(gitignore).splitlines():
         _log(f"[OK] .gitignore already contains {line}", quiet=quiet)
         return False
@@ -206,6 +236,7 @@ def transcript_max_q(path: Path) -> int:
 # ---------------------------------------------------------------------------
 
 def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
+    _warn_legacy(root)
     proto = _resolve_protocol_dir(root)
     state = _read_state(root)
     agent_files = detect_agent_files(root)
@@ -218,11 +249,13 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "protocol_exists": proto.exists(),
         "spec_exists": (proto / "QUESTION_PROTOCOL.md").exists(),
         "skill_exists": (proto / "SKILL.md").exists(),
+        "workspace_dir": str(_workspace_dir(root)),
         "state_exists": _state_path(root).exists(),
+        "legacy_state_found": _is_legacy_state(root),
         "next_id": state.get("next_id"),
         "epoch": state.get("epoch"),
         "open_count": len(state.get("open", [])) if isinstance(state.get("open"), list) else None,
-        "gitignore_ok": f"{PROTOCOL_DIR}/{STATE_NAME}" in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
+        "gitignore_ok": f"{WORKSPACE_DIR}/{STATE_NAME}" in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
         "directives_ok": directives_ok,
         "agent_files": agent_files,
         "rebaseline_threshold": REBASELINE_THRESHOLD,

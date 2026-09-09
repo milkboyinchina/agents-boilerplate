@@ -7,7 +7,7 @@ Manual triggers:
     /handoff-resume -> python3 handoff_protocol/handoff.py resume
 
 A zero-dependency Python 3 CLI that creates, archives, and resumes
-handoff files inside the project-local `handoff_protocol/` folder.
+handoff files inside the project-local `handoff_workspace/` folder.
 """
 
 from __future__ import annotations
@@ -22,12 +22,37 @@ import sys
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
-WORKSPACE_DIR = "handoff_protocol"
+WORKSPACE_DIR = "handoff_workspace"
 ARCHIVE_DIR = "archive"
 TEMPLATE_NAME = "handoff_template.md"
 GITIGNORE_LINE = f"{WORKSPACE_DIR}/"
+# Pre-split runtime name. Frozen intentionally: detected (with mv hint), never created.
+# NOTE: repo-wide renames must EXCLUDE this line.
+LEGACY_WORKSPACE_DIR = "handoff_protocol"
+
+
+def _is_legacy_workspace(root: Path) -> bool:
+    # The boilerplate copy shares the legacy name — only treat it as a legacy
+    # workspace when it actually holds handoff artifacts (files or archive/).
+    legacy = root / LEGACY_WORKSPACE_DIR
+    if not legacy.exists():
+        return False
+    if list(legacy.glob("handoff-*.md")):
+        return True
+    return (legacy / ARCHIVE_DIR).exists()
+
+
+def _warn_legacy(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under status --json.
+    if _is_legacy_workspace(root):
+        print(f"[WARN] legacy workspace {root / LEGACY_WORKSPACE_DIR} found (pre-Q39 name). "
+              "Migrate: mkdir -p handoff_workspace; "
+              "mv handoff_protocol/handoff-*.md handoff_workspace/; "
+              "mv handoff_protocol/archive handoff_workspace/; "
+              "refresh the handoff_protocol/ boilerplate copy; "
+              "swap the .gitignore line to handoff_workspace/.", file=sys.stderr)
 
 DEFAULT_TEMPLATE = """# {title}
 
@@ -153,9 +178,9 @@ def detect_git_status(root: Path) -> str:
 
 
 def detect_plan_status(root: Path) -> str:
-    plan = root / "green_amber_red_teams" / "plan.md"
+    plan = root / "green_amber_red_workspace" / "plan.md"
     if not plan.exists():
-        return "No green_amber_red_teams/plan.md detected."
+        return "No green_amber_red_workspace/plan.md detected."
     text = _read_text(plan)
     status_match = re.search(r"\*\*Lifecycle Status\*\*:\s*([^\n]+)", text)
     active_match = re.search(r"\*\*Active Task\*\*:\s*([^\n]+)", text)
@@ -176,8 +201,17 @@ def prompt_field(name: str, default: str = "") -> str:
     return value if value else default
 
 
-def load_template(workspace: Path) -> str:
-    template_path = workspace / "templates" / TEMPLATE_NAME
+def _proto_dir(root: Path) -> Path:
+    # The boilerplate copy lives beside this script in target workspaces.
+    here = Path(__file__).parent
+    if root in (*here.parents, here.parent):
+        return here
+    candidate = root / here.name
+    return candidate if candidate.exists() else here
+
+
+def load_template(root: Path) -> str:
+    template_path = _proto_dir(root) / "templates" / TEMPLATE_NAME
     if template_path.exists():
         return _read_text(template_path)
     return DEFAULT_TEMPLATE
@@ -235,7 +269,7 @@ def start_handoff(args: argparse.Namespace, root: Path) -> int:
             _log(f"[ARCHIVE] {active} -> {archive_path}", quiet=args.quiet)
 
     ctx = build_context(args, root)
-    template = load_template(workspace)
+    template = load_template(root)
     content = template.format(**ctx)
     output = workspace / handoff_filename()
     _write_text(output, content, dry_run=args.dry_run, quiet=args.quiet)
@@ -324,6 +358,7 @@ def done_handoff(args: argparse.Namespace, root: Path) -> int:
 
 
 def status_handoff(args: argparse.Namespace, root: Path) -> int:
+    _warn_legacy(root)
     workspace = root / WORKSPACE_DIR
     active = find_active_handoff(workspace)
     archived = sorted((workspace / ARCHIVE_DIR).glob("handoff-*.md")) if (workspace / ARCHIVE_DIR).exists() else []
@@ -331,6 +366,7 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
     result: dict[str, Any] = {
         "workspace": str(workspace),
         "workspace_exists": workspace.exists(),
+        "legacy_workspace_found": _is_legacy_workspace(root),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
         "gitignore_ok": GITIGNORE_LINE in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
         "active_handoff": str(active) if active else None,
@@ -385,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
     root = Path.cwd()
 
     if args.command == "start":
+        _warn_legacy(root)
         return start_handoff(args, root)
     if args.command == "resume":
         return resume_handoff(args, root)

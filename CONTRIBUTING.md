@@ -25,7 +25,7 @@ cp -r question_protocol /path/to/your-project/
 
 **What must stay structurally intact:**
 
-* The **source vs runtime split**: some folders are both template source *and* live workspace (e.g. `handoff_protocol/`), while `green_amber_red_teams_protocol/` (source) and `green_amber_red_teams/` (runtime workspace) are deliberately different names. Renaming one side without the other breaks installs — see the `📁` changelog entry for the full lesson.
+* The **source vs runtime split**: every boilerplate is source `*_protocol/` (tracked) plus runtime `*_workspace/` (gitignored) with unmistakably different names — `green_amber_red_team_protocol/` vs `green_amber_red_workspace/`, `handoff_protocol/` vs `handoff_workspace/`, and so on. Renaming one side without the other breaks installs — see the `📁` changelog entries for the full lesson.
 * Registry/file schemas (`routing.yaml` subset, `state.json` shapes) — CLIs parse a fixed subset; checklists enforce it.
 
 ---
@@ -34,12 +34,12 @@ cp -r question_protocol /path/to/your-project/
 
 ```bash
 # Compile all CLIs
-python3 -m py_compile green_amber_red_teams_protocol/init_teams.py \
+python3 -m py_compile green_amber_red_team_protocol/init_teams.py \
   handoff_protocol/handoff.py question_protocol/init_questions.py \
   tier_routing_protocol/resolve_model.py
 
 # Status + validators (all must be green)
-python3 green_amber_red_teams_protocol/init_teams.py --check
+python3 green_amber_red_team_protocol/init_teams.py --check
 python3 question_protocol/init_questions.py --validate question_protocol/examples/good_example.md
 python3 tier_routing_protocol/resolve_model.py --validate
 python3 tier_routing_protocol/resolve_model.py --check
@@ -90,9 +90,10 @@ Keep local adaptations in clearly separated commits (rename vs behavior vs regis
 
 Runtime state is per-machine and gitignored by each bootstrap CLI. Never force-add:
 
-* `question_protocol/state.json`
-* `tier_routing_protocol/heartbeat.json`, `tier_routing_protocol/routing_state.json`
-* `green_amber_red_teams/` workspaces, `handoff_protocol/handoff-*.md` active files
+* `question_workspace/state.json`
+* `tier_routing_workspace/heartbeat.json`, `tier_routing_workspace/routing_state.json`
+* `green_amber_red_workspace/` workspaces, `handoff_workspace/handoff-*.md` active files
+* `green_amber_red_team_protocol/redteam/{inbox,outbox,inbox-archive,outbox-archive}/*` packet contents (both sides)
 * `__pycache__/`, `*.pyc`
 
 Reviewable history (`routing_updates/pending-*.md`, archived handoffs/plans) **is** committed — that's the audit trail, not state.

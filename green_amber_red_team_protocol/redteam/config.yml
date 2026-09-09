@@ -1,0 +1,16 @@
+# Red-team exchange config — LOCAL values, edit per workspace copy.
+# side: which workspace is this copy serving? (green | red)
+#   green commands (send-redteam, review-redteam, verify-*) refuse on side: red,
+#   red commands (test-redteam, finish-redteam, recheck-redteam) refuse on side: green.
+# redteam_accessible (green side only): can green reach the red workspace?
+# redteam_path: absolute path when accessible (local dir or mounted network path).
+#   accessible: false  → air-gap: green asks the user to carry packets both ways.
+# redteam_enabled: false → send-redteam/review-redteam reply "red team is not
+#   available" and stop (graceful skip for trivial missions, not an error).
+# return_to: where air-gap carriers deliver the defect report (green outbox path).
+
+side: green
+redteam_enabled: true
+redteam_accessible: false
+redteam_path: null
+return_to: redteam/outbox

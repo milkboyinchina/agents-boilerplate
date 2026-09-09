@@ -1,10 +1,10 @@
 # 🚦 Traffic-Light Teaming Protocol Initialization Guide
 
-> **Quick Start**: In any new repo, copy the `green-amber-red-teams/` folder and run:
+> **Quick Start**: In any new repo, copy the `green_amber_red_teams_protocol/` folder and run:
 > ```bash
-> python3 green-amber-red-teams/init_teams.py
+> python3 green_amber_red_teams_protocol/init_teams.py
 > ```
-> Then tell your AI assistant: *"Read `green-amber-red-teams/INITIALIZE_GREEN_AMBER_RED_TEAMS.md` and set up the teams."*
+> Then tell your AI assistant: *"Read `green_amber_red_teams_protocol/INITIALIZE_GREEN_AMBER_RED_TEAMS.md` and set up the teams."*
 
 This guide provides a standardized instruction set for any AI coding assistant to bootstrap the **Traffic-Light Multi-Agent Teaming Protocol (Green / Amber / Red)** into any codebase or workspace.
 
@@ -24,16 +24,16 @@ This guide provides a standardized instruction set for any AI coding assistant t
 
 ### Step 1: Copy the Toolkit
 
-Copy the `green-amber-red-teams/` folder into the target repository root:
+Copy the `green_amber_red_teams_protocol/` folder into the target repository root:
 
 ```bash
-cp -r /path/to/agents-boilerplate/green-amber-red-teams ./
+cp -r /path/to/agents-boilerplate/green_amber_red_teams_protocol ./
 ```
 
 ### Step 2: Run the Bootstrap Script
 
 ```bash
-python3 green-amber-red-teams/init_teams.py
+python3 green_amber_red_teams_protocol/init_teams.py
 ```
 
 This creates:
@@ -46,13 +46,13 @@ This creates:
 Use `--dry-run` to preview changes without writing:
 
 ```bash
-python3 green-amber-red-teams/init_teams.py --dry-run
+python3 green_amber_red_teams_protocol/init_teams.py --dry-run
 ```
 
 ### Step 3: Seed an Initial Plan (Optional)
 
 ```bash
-python3 green-amber-red-teams/init_teams.py --init-plan "Add user authentication" --template backend
+python3 green_amber_red_teams_protocol/init_teams.py --init-plan "Add user authentication" --template backend
 ```
 
 Available templates: `generic`, `backend`, `frontend`, `mobile`, `devops`.
@@ -141,6 +141,6 @@ When `green-plan` creates a plan, it MUST follow this format:
 This protocol is **complementary** to per-session handoff rules (e.g., OpenCode's `handoff.md`).
 
 - `handoff.md` preserves context when a single session is interrupted.
-- `green-amber-red-teams` structures planning and execution across multiple agents and sessions.
+- `green_amber_red_teams` structures planning and execution across multiple agents and sessions.
 
 Both can be active in the same workspace without conflict.

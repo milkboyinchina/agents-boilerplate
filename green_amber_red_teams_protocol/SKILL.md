@@ -28,14 +28,14 @@ When invoked, the agent MUST execute these steps in order:
 
 ### Step 1: Locate the Toolkit
 
-If the user has already copied the `green-amber-red-teams/` folder into the workspace, use it. Otherwise, create the equivalent structure manually.
+If the user has already copied the `green_amber_red_teams_protocol/` folder into the workspace, use it. Otherwise, create the equivalent structure manually.
 
 ### Step 2: Run the Bootstrap Script (Preferred Path)
 
-If `green-amber-red-teams/init_teams.py` exists, run it deterministically:
+If `green_amber_red_teams/init_teams.py` exists, run it deterministically:
 
 ```bash
-python3 green-amber-red-teams/init_teams.py
+python3 green_amber_red_teams_protocol/init_teams.py
 ```
 
 Useful flags:

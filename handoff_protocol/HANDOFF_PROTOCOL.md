@@ -1,8 +1,8 @@
 # 🔄 Handoff Protocol Specification
 
-> **Quick Start**: In any project, copy the `handoff-protocol/` folder and run:
+> **Quick Start**: In any project, copy the `handoff_protocol/` folder and run:
 > ```bash
-> python3 handoff-protocol/handoff.py start --no-prompt
+> python3 handoff_protocol/handoff.py start --no-prompt
 > ```
 > Then tell your agent: *"Use `/handoff-start` and `/handoff-resume` for session continuity."*
 
@@ -41,13 +41,13 @@ All handoff artifacts are stored inside the project workspace:
 
 ```
 <project-root>/
-└── handoff-protocol/
+└── handoff_protocol/
     ├── handoff-YYYYMMDD-HHMM.md       # active handoff
     └── archive/
         └── handoff-YYYYMMDD-HHMM.md   # completed handoffs
 ```
 
-The `handoff-protocol/` folder is automatically added to `.gitignore` so handoff files never leak into version control.
+The `handoff_protocol/` folder is automatically added to `.gitignore` so handoff files never leak into version control.
 
 ---
 
@@ -60,7 +60,7 @@ The `handoff-protocol/` folder is automatically added to `.gitignore` so handoff
 handoff.py start
     │
     ▼
-handoff-protocol/handoff-YYYYMMDD-HHMM.md   (active)
+handoff_protocol/handoff-YYYYMMDD-HHMM.md   (active)
     │
     ▼
 /handoff-resume
@@ -75,7 +75,7 @@ agent continues work
 handoff.py done
     │
     ▼
-handoff-protocol/archive/handoff-YYYYMMDD-HHMM.md   (archived)
+handoff_protocol/archive/handoff-YYYYMMDD-HHMM.md   (archived)
 ```
 
 ### Rules
@@ -135,22 +135,22 @@ Every handoff file MUST contain these 9 sections:
 
 ### On `/handoff-start`
 
-1. Run `python3 handoff-protocol/handoff.py start`.
+1. Run `python3 handoff_protocol/handoff.py start`.
 2. If an active handoff already exists, warn the user and ask whether to use `--force`.
 3. Answer the prompts (or accept placeholders with `--no-prompt`).
 4. Confirm the handoff file was created.
 
 ### On `/handoff-resume`
 
-1. Run `python3 handoff-protocol/handoff.py resume`.
+1. Run `python3 handoff_protocol/handoff.py resume`.
 2. Read the printed summary.
 3. Read any files referenced in the handoff.
 4. Continue from the **Next Steps** section.
 
 ### On task completion
 
-1. Run `python3 handoff-protocol/handoff.py done`.
-2. The active handoff is moved to `handoff-protocol/archive/`.
+1. Run `python3 handoff_protocol/handoff.py done`.
+2. The active handoff is moved to `handoff_protocol/archive/`.
 
 ---
 
@@ -165,9 +165,9 @@ This handoff protocol is **complementary** to:
 
 ## 8. Verification Checklist
 
-- [ ] `handoff-protocol/` exists in project root.
-- [ ] `handoff-protocol/archive/` exists.
-- [ ] `.gitignore` contains `handoff-protocol/`.
+- [ ] `handoff_protocol/` exists in project root.
+- [ ] `handoff_protocol/archive/` exists.
+- [ ] `.gitignore` contains `handoff_protocol/`.
 - [ ] `handoff.py start` creates a handoff file.
 - [ ] `handoff.py resume` reads the active handoff.
 - [ ] `handoff.py done` moves the active handoff to archive.

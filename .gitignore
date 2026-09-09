@@ -24,4 +24,8 @@ Thumbs.db
 green_amber_red_teams/
 
 # Question protocol runtime state (conversation counter, open questions)
-question-protocol/state.json
+question_protocol/state.json
+
+# Tier routing runtime state (weekly heartbeat + task pins)
+tier_routing_protocol/heartbeat.json
+tier_routing_protocol/routing_state.json

@@ -3,11 +3,11 @@
 Project-Local Session Handoff Protocol
 
 Manual triggers:
-    /handoff-start  -> python3 handoff-protocol/handoff.py start
-    /handoff-resume -> python3 handoff-protocol/handoff.py resume
+    /handoff-start  -> python3 handoff_protocol/handoff.py start
+    /handoff-resume -> python3 handoff_protocol/handoff.py resume
 
 A zero-dependency Python 3 CLI that creates, archives, and resumes
-handoff files inside the project-local `handoff-protocol/` folder.
+handoff files inside the project-local `handoff_protocol/` folder.
 """
 
 from __future__ import annotations
@@ -24,9 +24,9 @@ from typing import Any
 
 __version__ = "1.0.0"
 
-WORKSPACE_DIR = "handoff-protocol"
+WORKSPACE_DIR = "handoff_protocol"
 ARCHIVE_DIR = "archive"
-TEMPLATE_NAME = "handoff-template.md"
+TEMPLATE_NAME = "handoff_template.md"
 GITIGNORE_LINE = f"{WORKSPACE_DIR}/"
 
 DEFAULT_TEMPLATE = """# {title}
@@ -242,7 +242,7 @@ def start_handoff(args: argparse.Namespace, root: Path) -> int:
 
     if not args.quiet and not args.dry_run:
         print(f"\n✅ Handoff started: {output}")
-        print("   Resume later with: python3 handoff-protocol/handoff.py resume")
+        print("   Resume later with: python3 handoff_protocol/handoff.py resume")
     return 0
 
 

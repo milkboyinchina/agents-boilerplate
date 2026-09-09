@@ -6,19 +6,31 @@ Copy this folder into any repository, run `init_teams.py`, and start using struc
 
 ---
 
+## 💡 Why use this?
+
+Without a teaming protocol, agents jump straight into code: no written plan, scope creep mid-task, untested changes, and every new session rebuilds context from scratch.
+
+| Without this protocol | With this protocol |
+|:---|:---|
+| Agent codes from a chat prompt — plan lives in conversation history | Green Team writes `plan.md`: exact files, effort, verification steps |
+| "Just do it" executes immediately, surprises included | Amber Team summarizes the plan and asks before touching code |
+| Done means "code written", bugs found later by you | Green Team audits diff + tests; Red Team adversarially verifies in a sandbox |
+
+---
+
 ## ⚡ Quick Start
 
 ```bash
 # 1. Drop this folder into your project
-python3 green-amber-red-teams/init_teams.py
+python3 green_amber_red_teams_protocol/init_teams.py
 
 # 2. Optional: seed an initial plan
-python3 green-amber-red-teams/init_teams.py --init-plan "Add user authentication" --template backend
+python3 green_amber_red_teams_protocol/init_teams.py --init-plan "Add user authentication" --template backend
 ```
 
 Or tell any AI assistant:
 
-> *"Read `green-amber-red-teams/INITIALIZE_GREEN_AMBER_RED_TEAMS.md` and set up the Traffic-Light team protocol."*
+> *"Read `green_amber_red_teams_protocol/INITIALIZE_GREEN_AMBER_RED_TEAMS.md` and set up the Traffic-Light team protocol."*
 
 ---
 
@@ -57,7 +69,7 @@ Or tell any AI assistant:
 ## 🛠️ CLI Reference
 
 ```bash
-python3 green-amber-red-teams/init_teams.py [OPTIONS]
+python3 green_amber_red_teams_protocol/init_teams.py [OPTIONS]
 ```
 
 | Option | Description |

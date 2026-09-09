@@ -4,6 +4,68 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📏 [2026-09-09] README Benefit Pass + Workspace Governance
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Added standard `## 💡 Why use this?` (benefit + Without/With table) to all four boilerplate READMEs.
+  - Fixed stale refs: `handoff_template.md` in handoff README/SKILL, snake fixture names in question README/SKILL, `TEMPLATE_NAME` constant in `handoff.py` (was silently falling back to default template), root README ordinals, tier README cron layout (+ plist).
+  - `AGENTS.md`: installed tier-routing directives via `--install`; appended Boilerplate Authoring Rules (naming, benefit section, runtime gitignore, changelog).
+  - New `NEW_PROTOCOL_CHECKLIST.md` meta authoring checklist (naming, required files, benefit shape, hygiene, docs, verification).
+  - `.gitignore`: added tier runtime lines (init-managed); green line unchanged (runtime name frozen).
+- **Quality & Verification Results**:
+  - Repo-wide grep: zero stale filenames outside `CHANGELOG.md` history.
+  - `--check` green on all four CLIs; temp lifecycles re-run post-change.
+
+---
+
+## 📁 [2026-09-09] `_protocol` Naming Convention (green + tier renames)
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - `green_amber_red_teams/` → `green_amber_red_teams_protocol/` (source only; runtime `green_amber_red_teams/` frozen per Q12-b — `.gitignore` line unchanged).
+  - `model_routing_protocol/` → `tier_routing_protocol/` (includes cron marker → `tier-routing-heartbeat`, plist → `com.tierrouting.heartbeat`).
+  - Classified sweep: source-context refs renamed, runtime `plan.md`/workspace refs kept. `CHANGELOG.md` history untouched.
+  - Migration prompt for deployed workspaces: copy renamed folders over, re-run inits (idempotent), delete old folders, commit. Green collision note: copy source to a temp path if runtime `green_amber_red_teams/` exists, run init from there, delete temp copy.
+- **Quality & Verification Results**:
+  - `git mv` renames staged as renames; post-sweep grep confirms remaining `green_amber_red_teams` hits are all runtime-context.
+
+---
+
+## 🎚️ [2026-09-09] Tier Routing Protocol Portable Boilerplate v1.0.0
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Created portable `model_routing_protocol/` boilerplate: tiers (T1/T2/T3) resolve to per-tool IDs at runtime; raw IDs only in `routing.yaml` `aliases:`.
+  - Planner stamps Tier per `plan.md` task-row; Amber resolves pre-execution with layer attribution.
+  - Precedence: tier default → `--force-tier` → `MODEL_ROUTE_OVERRIDE` → per-task pin (`/pin-model`, auto-release on `[COMPLETED]`, `/unpin` early). No session pin.
+  - Failover chains with loud warnings; `--lenient`/`--strict` for unknown tools.
+  - Freshness: weekly dumb cron → `heartbeat.json` (sole output, gitignored); drift → `routing_updates/pending-*.md` + Q9-a approval; >10d heartbeat = unknown.
+  - `discover.models_file` file-path-only hints (Q13-a) + no-models-file agent ask-branch; per-tool `add-tool` workflow (opencode/antigravity/codex/devin seeded).
+  - OS-aware `--install-cron` (Linux cron / macOS launchd / Windows schtasks) with exact-manual fallback docs in `cron/`; init-managed gitignore (manual opt-out); `--check` covers registry/pins/gitignore/cron/directives.
+- **Affected Files**: `model_routing_protocol/` (spec, `routing.yaml`, `resolve_model.py`, `SKILL.md`, `README.md`, `templates/`, `examples/`, `cron/`), `README.md`.
+- **Quality & Verification Results**:
+  - `py_compile resolve_model.py` → passed (after fixing subset-parser `{}`→`[]` list-block + inline `[]` bugs found by `--validate`).
+  - `--validate` shipped registry → valid, 6 aliases / 4 tools + stale warnings; `--fail-on-stale` → exit 1; `--registry stale_registry.yaml` → exit 1 as designed.
+  - Temp lifecycle: `--install` idempotent (`[UPDATE]`→`[SKIP]`), resolve with layer attribution, `pin`/`unpin`, `--force-tier`, `MODEL_ROUTE_OVERRIDE`, alias+tier failover chains with warnings.
+  - `heartbeat` exit 0 → 2 on drift; `refresh --cron` wrote proposal only; missing-models-file Q13 branches surface per tool.
+
+---
+
+## 📁 [2026-09-09] Snake_case Rename + init_questions Gitignore Fix
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Renamed source folders via `git mv` (history preserved): `green-amber-red-teams/` → `green_amber_red_teams/`, `handoff-protocol/` → `handoff_protocol/`, `question-protocol/` → `question_protocol/`; kebab file names → snake (`handoff_template.md`, `question_block.md`, `answer_block.md`, `good_example.md`, `bad_example.md`).
+  - Swept 100+ kebab references across `*.md`/`*.py` (14 files). `CHANGELOG.md` history intentionally untouched — entries below this one reference pre-rename paths.
+  - Runtime dirs frozen (Q12-b): no migration shim in CLIs. `init_questions.py` gained `ensure_gitignore` (`question_protocol/state.json`) + `gitignore_ok` in `--check`.
+  - Migration prompt for deployed workspaces (ERP, QA sandbox): copy the three renamed folders over, re-run the three inits (idempotent — blocks match, not duplicated), delete old kebab folders, commit. If a target already has runtime `green_amber_red_teams/`, copy the boilerplate to a temp path, run init from there, then delete the temp copy (avoids source/runtime name collision).
+- **Quality & Verification Results**:
+  - Post-sweep grep: zero kebab references outside `CHANGELOG.md`.
+  - `py_compile` ×3 CLIs → passed; `--validate` good/bad fixtures → pass/fail as before.
+
+---
+
 ## ❓ [2026-09-09] Applied Question Protocol to agents-boilerplate Workspace
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

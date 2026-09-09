@@ -1,6 +1,6 @@
 ---
-name: handoff-protocol
-description: Captures and resumes project-local AI agent session state using the handoff-protocol folder. Use when the user says /handoff-start, /handoff-resume, "pause and capture state", "continue from handoff", or similar session continuity commands.
+name: handoff_protocol
+description: Captures and resumes project-local AI agent session state using the handoff_protocol folder. Use when the user says /handoff-start, /handoff-resume, "pause and capture state", "continue from handoff", or similar session continuity commands.
 ---
 
 # Handoff Protocol Skill
@@ -19,7 +19,7 @@ Use this skill whenever the user says:
 This protocol is **project-local and manual**:
 - No global installation.
 - No automatic triggers based on quota or checkpoints.
-- All files live in `<project-root>/handoff-protocol/`.
+- All files live in `<project-root>/handoff_protocol/`.
 
 ---
 
@@ -27,13 +27,13 @@ This protocol is **project-local and manual**:
 
 ```
 <project-root>/
-├── .gitignore                              # contains handoff-protocol/
-└── handoff-protocol/
+├── .gitignore                              # contains handoff_protocol/
+└── handoff_protocol/
     ├── handoff.py                          # CLI
     ├── README.md
     ├── HANDOFF_PROTOCOL.md
     ├── SKILL.md
-    ├── templates/handoff-template.md
+    ├── templates/handoff_template.md
     ├── handoff-YYYYMMDD-HHMM.md            # active handoff
     └── archive/
         └── handoff-YYYYMMDD-HHMM.md        # archived handoffs
@@ -48,7 +48,7 @@ This protocol is **project-local and manual**:
 Run:
 
 ```bash
-python3 handoff-protocol/handoff.py start
+python3 handoff_protocol/handoff.py start
 ```
 
 If an active handoff already exists, ask the user whether to run with `--force`.
@@ -63,7 +63,7 @@ The agent MUST:
 Run:
 
 ```bash
-python3 handoff-protocol/handoff.py resume
+python3 handoff_protocol/handoff.py resume
 ```
 
 The agent MUST:
@@ -76,19 +76,19 @@ The agent MUST:
 Run:
 
 ```bash
-python3 handoff-protocol/handoff.py done
+python3 handoff_protocol/handoff.py done
 ```
 
-This moves the active handoff to `handoff-protocol/archive/`.
+This moves the active handoff to `handoff_protocol/archive/`.
 
 ---
 
 ## ✅ Completion Criteria
 
 Before responding to the user, verify:
-- [ ] `handoff-protocol/` exists.
-- [ ] `handoff-protocol/archive/` exists.
-- [ ] `.gitignore` contains `handoff-protocol/`.
+- [ ] `handoff_protocol/` exists.
+- [ ] `handoff_protocol/archive/` exists.
+- [ ] `.gitignore` contains `handoff_protocol/`.
 - [ ] For `/handoff-start`: a new active handoff file was created.
 - [ ] For `/handoff-resume`: the active handoff summary was read and understood.
 - [ ] For task completion: the active handoff was archived.

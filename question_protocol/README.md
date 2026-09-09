@@ -5,8 +5,21 @@ A portable, zero-dependency convention for concise multi-question turns: agents 
 Unlike ad-hoc questioning, this protocol is **conversation-scoped and compaction-safe**:
 - `Q1, Q2...` never reuse mid-conversation — skipped questions stay answerable later.
 - `Q1: / Q1. / Q1=` free-form aliases, case-insensitive options, `skip Qn` support.
-- Counter survives compaction via `question-protocol/state.json` + transcript scan.
+- Counter survives compaction via `question_protocol/state.json` + transcript scan.
 - Re-baseline at >99 closed questions, only on user approval.
+
+---
+
+## 💡 Why use this?
+
+Without labeled questions, multi-question turns force you to retype full sentences, a bare "yes" is ambiguous about *which* question it answers, and skipped questions silently die — worse after compaction wipes session memory.
+
+| Without this protocol | With this protocol |
+|:---|:---|
+| Retype full answers or quote blocks to stay clear | Reply `Q1-a, Q2: custom text` — short labels, full context |
+| "Yes" could mean any of three questions | Every choice is `Qn-a/b` (binary included), case-insensitive |
+| Skipped question is forgotten by next turn | `Qn: skip` stays OPEN; late answers by original number resolve |
+| Compaction erases what was asked | Counter in `state.json` + transcript scan recovers numbering |
 
 ---
 
@@ -14,18 +27,18 @@ Unlike ad-hoc questioning, this protocol is **conversation-scoped and compaction
 
 ```bash
 # 1. Copy this folder into your project
-cp -r /path/to/agents-boilerplate/question-protocol ./
+cp -r /path/to/agents-boilerplate/question_protocol ./
 
 # 2. Run the bootstrap
-python3 question-protocol/init_questions.py
+python3 question_protocol/init_questions.py
 
 # 3. Validate a transcript
-python3 question-protocol/init_questions.py --validate question-protocol/examples/good-example.md
+python3 question_protocol/init_questions.py --validate question_protocol/examples/good_example.md
 ```
 
 Or tell your agent:
 
-> *"Read `question-protocol/QUESTION_PROTOCOL.md` and follow the concise question protocol for all multi-question turns."*
+> *"Read `question_protocol/QUESTION_PROTOCOL.md` and follow the concise question protocol for all multi-question turns."*
 
 ---
 
@@ -33,18 +46,18 @@ Or tell your agent:
 
 ```
 <project-root>/
-└── question-protocol/
+└── question_protocol/
     ├── init_questions.py               # bootstrap + validator CLI
     ├── README.md                       # this file
     ├── QUESTION_PROTOCOL.md            # full specification
     ├── SKILL.md                        # agent skill definition
     ├── state.json                      # counter + open questions (gitignored, created on first ask)
     ├── templates/
-    │   ├── question-block.md           # agent-side ask template
-    │   └── answer-block.md             # user-side reply template
+    │   ├── question_block.md           # agent-side ask template
+    │   └── answer_block.md             # user-side reply template
     └── examples/
-        ├── good-example.md             # passing fixture
-        └── bad-example.md              # failing fixture
+        ├── good_example.md             # passing fixture
+        └── bad_example.md              # failing fixture
 ```
 
 ---
@@ -52,8 +65,8 @@ Or tell your agent:
 ## 🛠️ CLI Reference
 
 ```bash
-python3 question-protocol/init_questions.py [OPTIONS]
-python3 question-protocol/init_questions.py --validate <file>
+python3 question_protocol/init_questions.py [OPTIONS]
+python3 question_protocol/init_questions.py --validate <file>
 ```
 
 | Option | Description |
@@ -91,8 +104,8 @@ python3 question-protocol/init_questions.py --validate <file>
 
 ## 🔗 Relationship to Other Boilerplates
 
-* `green-amber-red-teams`: `amber-check` confirmations MUST use `Q1-a) Yes / Q1-b) No`.
-* `handoff-protocol`: include Open Questions (`Qn` + status) in handoff files for resume recovery.
+* `green_amber_red_teams`: `amber-check` confirmations MUST use `Q1-a) Yes / Q1-b) No`.
+* `handoff_protocol`: include Open Questions (`Qn` + status) in handoff files for resume recovery.
 
 ---
 

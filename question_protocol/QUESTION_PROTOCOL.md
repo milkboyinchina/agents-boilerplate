@@ -1,10 +1,10 @@
 # ❓ Question Protocol Specification
 
-> **Quick Start**: In any project, copy the `question-protocol/` folder and run:
+> **Quick Start**: In any project, copy the `question_protocol/` folder and run:
 > ```bash
-> python3 question-protocol/init_questions.py
+> python3 question_protocol/init_questions.py
 > ```
-> Then tell your agent: *"Follow `question-protocol/QUESTION_PROTOCOL.md` for all multi-question turns."*
+> Then tell your agent: *"Follow `question_protocol/QUESTION_PROTOCOL.md` for all multi-question turns."*
 
 This document defines a **concise, label-based question/answer convention** so users can reply with short `Q1-a`-style answers and agents can still resolve full context — including skips, late answers, long sessions, and context compaction.
 
@@ -87,7 +87,7 @@ On receiving a reply, the agent MUST:
 ```markdown
 Resolved: Q1-a (= Yes, deploy), Q2: custom TTL 120s, Q3 skipped (still open).
 ```
-4. Update `question-protocol/state.json` (`next_id`, open/closed status).
+4. Update `question_protocol/state.json` (`next_id`, open/closed status).
 
 ---
 
@@ -107,12 +107,12 @@ Resolved: Q1-a (= Yes, deploy), Q2: custom TTL 120s, Q3 skipped (still open).
 
 Question state is file-backed so context summarization (`/compact`, `/clear` summaries, model switches) does not lose the counter:
 
-* State file: `question-protocol/state.json` (gitignored after bootstrap):
+* State file: `question_protocol/state.json` (gitignored after bootstrap):
 ```json
 {"next_id": 6, "epoch": 2, "open": [{"id": "Q2", "text": "Cache TTL?"}], "archived_epochs": ["E1"]}
 ```
 * Recovery rule on resume (`/handoff-resume` or fresh session):
-  1. Read `state.json` + active `handoff-protocol/` handoff (Open Questions section, if present).
+  1. Read `state.json` + active `handoff_protocol/` handoff (Open Questions section, if present).
   2. Scan visible transcript for highest `Qn` / `En-Qn`.
   3. `next_id = max(state.next_id, transcript_max + 1, handoff_max + 1)`.
   4. Announce: `Recovered at Qx (epoch En), y open carried over.` Then re-list open Qs with original numbers and full text.

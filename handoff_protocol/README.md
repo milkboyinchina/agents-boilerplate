@@ -6,7 +6,19 @@ Unlike global quota-based handoffs, this protocol is **manual**:
 - `/handoff-start` — capture the current state.
 - `/handoff-resume` — continue from the last handoff.
 
-All handoff files live inside the project-local `handoff-protocol/` folder, which is automatically gitignored.
+All handoff files live inside the project-local `handoff_protocol/` folder, which is automatically gitignored.
+
+---
+
+## 💡 Why use this?
+
+Without session handoffs, every interruption (closed IDE, model switch, paused task) destroys context: the next session re-asks everything, re-reads the codebase, and risks redoing or contradicting prior work.
+
+| Without this protocol | With this protocol |
+|:---|:---|
+| Interrupted session = lost state, re-explain from zero | `/handoff-start` captures 9 fields: task, files, verification, rollback, next steps |
+| New agent guesses where work stopped | `/handoff-resume` continues from exact Next Steps in one command |
+| Switching models means re-briefing the replacement | Handoff file is model-agnostic — any agent resumes it |
 
 ---
 
@@ -14,21 +26,21 @@ All handoff files live inside the project-local `handoff-protocol/` folder, whic
 
 ```bash
 # 1. Copy this folder into your project
-cp -r /path/to/agents-boilerplate/handoff-protocol ./
+cp -r /path/to/agents-boilerplate/handoff_protocol ./
 
 # 2. Start a handoff
-python3 handoff-protocol/handoff.py start --no-prompt
+python3 handoff_protocol/handoff.py start --no-prompt
 
 # 3. Later, resume from it
-python3 handoff-protocol/handoff.py resume
+python3 handoff_protocol/handoff.py resume
 
 # 4. When the task is complete, archive the handoff
-python3 handoff-protocol/handoff.py done
+python3 handoff_protocol/handoff.py done
 ```
 
 Or tell your agent:
 
-> *"Read `handoff-protocol/HANDOFF_PROTOCOL.md` and use `/handoff-start` and `/handoff-resume` for session continuity."*
+> *"Read `handoff_protocol/HANDOFF_PROTOCOL.md` and use `/handoff-start` and `/handoff-resume` for session continuity."*
 
 ---
 
@@ -36,14 +48,14 @@ Or tell your agent:
 
 ```
 <project-root>/
-├── .gitignore                              # contains handoff-protocol/
-└── handoff-protocol/
+├── .gitignore                              # contains handoff_protocol/
+└── handoff_protocol/
     ├── handoff.py                          # CLI
     ├── README.md                           # this file
     ├── HANDOFF_PROTOCOL.md                 # full specification
     ├── SKILL.md                            # agent skill definition
     ├── templates/
-    │   └── handoff-template.md             # 9-field template
+    │   └── handoff_template.md             # 9-field template
     ├── handoff-YYYYMMDD-HHMM.md            # active handoff
     └── archive/
         └── handoff-YYYYMMDD-HHMM.md        # completed handoffs
@@ -54,14 +66,14 @@ Or tell your agent:
 ## 🛠️ CLI Reference
 
 ```bash
-python3 handoff-protocol/handoff.py [OPTIONS] <COMMAND>
+python3 handoff_protocol/handoff.py [OPTIONS] <COMMAND>
 ```
 
 | Command | Description |
 |---|---|
 | `start` | Create a new active handoff file. |
 | `resume` | Print a resume summary from the active handoff. |
-| `done` | Move the active handoff to `handoff-protocol/archive/`. |
+| `done` | Move the active handoff to `handoff_protocol/archive/`. |
 | `status` | Show whether an active handoff exists. |
 
 | Option | Description |
@@ -87,10 +99,10 @@ python3 handoff-protocol/handoff.py [OPTIONS] <COMMAND>
 [User: /handoff-start]
         │
         ▼
-[python3 handoff-protocol/handoff.py start]
+[python3 handoff_protocol/handoff.py start]
         │
         ▼
-[handoff-protocol/handoff-YYYYMMDD-HHMM.md created]
+[handoff_protocol/handoff-YYYYMMDD-HHMM.md created]
         │
         ▼
 [session ends or pauses]
@@ -99,16 +111,16 @@ python3 handoff-protocol/handoff.py [OPTIONS] <COMMAND>
 [new session: /handoff-resume]
         │
         ▼
-[python3 handoff-protocol/handoff.py resume]
+[python3 handoff_protocol/handoff.py resume]
         │
         ▼
 [agent reads handoff and continues]
         │
         ▼
-[when done: python3 handoff-protocol/handoff.py done]
+[when done: python3 handoff_protocol/handoff.py done]
         │
         ▼
-[handoff moved to handoff-protocol/archive/]
+[handoff moved to handoff_protocol/archive/]
 ```
 
 ---
@@ -117,8 +129,8 @@ python3 handoff-protocol/handoff.py [OPTIONS] <COMMAND>
 
 This handoff protocol is **complementary** to the Traffic-Light teaming protocol:
 
-- `green-amber-red-teams` structures **planning, execution, and auditing** across agents.
-- `handoff-protocol` preserves **session continuity** when a single agent session pauses or resumes.
+- `green_amber_red_teams` structures **planning, execution, and auditing** across agents.
+- `handoff_protocol` preserves **session continuity** when a single agent session pauses or resumes.
 
 The `handoff.py start` command auto-detects `green_amber_red_teams/plan.md` status and includes it in the handoff file.
 

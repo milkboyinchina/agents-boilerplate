@@ -1,5 +1,5 @@
 ---
-name: question-protocol
+name: question_protocol
 description: Asks concise labeled multi-question turns (Q1, Q2 with Q1-a/b options) and resolves short user replies including free-form overrides, skips, and late answers. Use whenever asking more than one question, offering choices, or resuming questions after compaction.
 ---
 
@@ -15,7 +15,7 @@ This protocol is **conversation-scoped and compaction-safe**:
 - `Q1, Q2...` never reuse mid-conversation; reset only on new conversation.
 - Options are `Qn-a/b/c` case-insensitive (binary choices included).
 - Free-form: `Qn:`, `Qn.`, `Qn=` are aliases. Multi-select: comma or plus. Skip: `Qn: skip` / `skip Qn`.
-- Counter persists in `question-protocol/state.json`; recover via transcript scan after compaction.
+- Counter persists in `question_protocol/state.json`; recover via transcript scan after compaction.
 
 ---
 
@@ -23,17 +23,17 @@ This protocol is **conversation-scoped and compaction-safe**:
 
 ### Step 1: Locate or bootstrap
 
-If `question-protocol/init_questions.py` exists, ensure directives are installed:
+If `question_protocol/init_questions.py` exists, ensure directives are installed:
 
 ```bash
-python3 question-protocol/init_questions.py --check
+python3 question_protocol/init_questions.py --check
 ```
 
 If not initialized, run the bootstrap (or manually append the directive block from `init_questions.py` to `AGENTS.md` / `CLAUDE.md` / `.cursorrules` / `GEMINI.md`).
 
 ### Step 2: Ask with labels
 
-Follow `templates/question-block.md`. Every choice — including yes/no — gets `Qn-a/b` labels. Re-list **Open** (skipped, original numbers, full text) + **New** (fresh numbers, full text). Max 4 open.
+Follow `templates/question_block.md`. Every choice — including yes/no — gets `Qn-a/b` labels. Re-list **Open** (skipped, original numbers, full text) + **New** (fresh numbers, full text). Max 4 open.
 
 ### Step 3: Resolve replies
 

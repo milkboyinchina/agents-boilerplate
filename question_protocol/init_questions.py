@@ -23,7 +23,7 @@ from pathlib import Path
 
 __version__ = "1.0.0"
 
-PROTOCOL_DIR = "question-protocol"
+PROTOCOL_DIR = "question_protocol"
 STATE_NAME = "state.json"
 REBASELINE_THRESHOLD = 99
 
@@ -35,14 +35,14 @@ AGENT_DIRECTIVE_FILES = [
 ]
 
 DIRECTIVE_BLOCK = """\n\
-### ❓ Concise Question Protocol (`question-protocol/`)
+### ❓ Concise Question Protocol (`question_protocol/`)
 
 1. **Label every question**: conversation-scoped monotonic `Q1, Q2, ...` (never reuse mid-conversation; reset only on new conversation). Single questions still use `Q1`.
 2. **Label every choice**: `Qn-a/b/c...` case-insensitive — including binary (`yes/no`, `a/b`, `agree/disagree`, `proceed/cancel`).
 3. **Free-form override**: accept `Qn: <text>` / `Qn. <text>` / `Qn= <text>` as aliases. Multi-select: `Q1-a,c` or `Q1-a+c`. Skip: `Qn: skip` / `skip Qn` (stays OPEN).
 4. **Re-list Open + New** with full text every ask; max 4 open. Late answers by original number MUST resolve.
 5. **Long sessions**: at >99 closed questions, PROPOSE `Archive Q1-Q99 and re-baseline to Q1?` — only on approval (archived refs `E1-Q5`).
-6. **Compaction**: persist `question-protocol/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list open Qs.
+6. **Compaction**: persist `question_protocol/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list open Qs.
 """.strip() + "\n"
 
 # Matches E2-Q12-a, Q3, q1-B, Q4: text, Q5. text, Q6= text, skip Q7
@@ -75,7 +75,7 @@ def _read_text(path: Path) -> str:
 
 
 def _resolve_protocol_dir(root: Path) -> Path:
-    # Works whether cwd is the project root or inside question-protocol/.
+    # Works whether cwd is the project root or inside question_protocol/.
     if root.name == PROTOCOL_DIR:
         return root
     return root / PROTOCOL_DIR
@@ -97,6 +97,22 @@ def _read_state(root: Path) -> dict:
 
 def detect_agent_files(root: Path) -> list[str]:
     return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
+
+
+def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+    """Gitignore runtime counter state in target workspaces (opt out by deleting the line)."""
+    gitignore = root / ".gitignore"
+    line = f"{PROTOCOL_DIR}/{STATE_NAME}"
+    if line in _read_text(gitignore).splitlines():
+        _log(f"[OK] .gitignore already contains {line}", quiet=quiet)
+        return False
+    new_content = _read_text(gitignore).rstrip("\n") + "\n" + line + "\n"
+    if dry_run:
+        _log(f"[DRY-RUN] Would append {line!r} to {gitignore}", quiet=quiet)
+        return True
+    gitignore.write_text(new_content, encoding="utf-8")
+    _log(f"[UPDATE] {gitignore}", quiet=quiet)
+    return True
 
 
 def inject_directives(root: Path, agent_files: list[str], *, dry_run: bool, quiet: bool, force: bool = False) -> list[str]:
@@ -206,6 +222,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "next_id": state.get("next_id"),
         "epoch": state.get("epoch"),
         "open_count": len(state.get("open", [])) if isinstance(state.get("open"), list) else None,
+        "gitignore_ok": f"{PROTOCOL_DIR}/{STATE_NAME}" in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
         "directives_ok": directives_ok,
         "agent_files": agent_files,
         "rebaseline_threshold": REBASELINE_THRESHOLD,
@@ -247,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
         ok, errors = validate_file(Path(args.validate))
         if ok:
             if not args.quiet:
-                print(f"✅ {args.validate}: question-protocol compliant.")
+                print(f"✅ {args.validate}: question_protocol compliant.")
             return 0
         print(f"❌ {args.validate}: {len(errors)} violation(s):")
         for e in errors:
@@ -257,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         status_check(root, json_output=args.json, quiet=args.quiet)
         return 0
+
+    ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
 
     agent_files = detect_agent_files(root)
     if agent_files:

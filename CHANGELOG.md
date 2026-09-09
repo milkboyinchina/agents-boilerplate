@@ -4,6 +4,16 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-09] CONTRIBUTING.md Forking Guide
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - New `CONTRIBUTING.md`: fork-and-adapt path (safe vs structural changes, source/runtime split lesson), copy-paste verification battery, upstream-sync workflow, conventions pointers, what-not-to-commit list.
+- **Quality & Verification Results**:
+  - Every battery command executed from the repo root: compile ×4, `--check`, both validators green; stale-name sweep clean (sole hit is the guide quoting its own command).
+
+---
+
 ## 📝 [2026-09-09] Root README: Own-Section Quick Start + Workflow One-Liners
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

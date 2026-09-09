@@ -4,6 +4,19 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-09] Tier README Refresh + Green Agnosticism Lead
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Rewrote tier README `Why use this?` for a general audience (vanilla-agent framing: right-model-per-task, zero selection load, rename-proofing, failover) — removed personal `/hard-fix-sonnet` reference.
+  - Scrubbed `/hard-fix-sonnet` from spec §5 + slash template (reworded to model-specific commands); verified zero hits outside history.
+  - Tier README: new Enable/disable subsection (file vs env, precedence, exit 3, heartbeat-skip).
+  - Green README: tool-agnosticism as the lead benefit + cross-tool handoff table row.
+- **Quality & Verification Results**:
+  - Repo-wide scrub grep clean; `--validate` + question `--validate` green.
+
+---
+
 ## 🎚️ [2026-09-09] Tier Routing: Enable/Disable Kill Switches
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

@@ -57,7 +57,7 @@ Every resolve prints which layer won: `resolved claude-opus via pin[task-3]`. A 
 
 ## 5. Slash commands (aliases only, never IDs)
 
-* `/hard-fix` — force T3 + strongest reasoning for this resolve (unpinned, one-shot). The hardened successor to hardcoded `/hard-fix-sonnet`.
+* `/hard-fix` — force T3 + strongest reasoning for this resolve (unpinned, one-shot). Replaces hardcoded model-specific commands, which break on vendor renames.
 * `/pin-model <alias>` — e.g. `/pin-model claude-opus`. Pins the alias to the active task (T3 default keeps failing → pin Sonnet/Opus and stay there until the task completes).
 * `/unpin` — release the active task's pin early.
 

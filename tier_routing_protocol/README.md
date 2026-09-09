@@ -14,14 +14,14 @@ Built for workspaces shared by several agentic tools (opencode, antigravity, cod
 
 ## 💡 Why use this?
 
-Without tier routing, model IDs get hardcoded where they rot: a `/hard-fix-sonnet` breaks on deprecation, every tool needs its own mapping, and a failing T3 default leaves you hand-switching models mid-task.
+On a vanilla agent setup, every task runs on whatever model the session started with: trivial edits burn frontier tokens, hard problems get an underpowered model, and the user hand-picks models task after task. Across tools it gets worse — each needs its own mapping, maintained by hand, rotting on every vendor rename.
 
 | Without this protocol | With this protocol |
 |:---|:---|
-| Model ID baked into commands/plans — renames break everything | Tasks declare `T1/T2/T3`; IDs live only in `routing.yaml` |
-| One mapping per tool, maintained by hand in chat | Open `tools:` map + per-tool resolve; adding codex = one block |
-| T3 default failing → manually re-brief another model | `/pin-model claude-sonnet` pins per-task till completion |
-| Stale mappings discovered only when tasks fail | Weekly heartbeat + drift proposals + pre-commit stale gate |
+| One session model for everything — overkill for trivia, weak for hard tasks | Tasks declare `T1/T2/T3`; each resolves to the right model class per tool |
+| User selects models per task, every task, forever | Tier stamped once at plan time; Amber resolves automatically |
+| Model IDs pasted into prompts and plans — renames silently break them | IDs live only in `routing.yaml`; a rename is a 1–2 line edit plus `--validate` |
+| Dead or retired model fails the task outright | Failover chains degrade loudly; weekly heartbeat keeps mappings fresh |
 
 ---
 
@@ -91,7 +91,17 @@ Or tell your agent:
 | `--check [--json]` | Registry, pins, gitignore, cron, directives status. |
 | `--validate [--fail-on-stale]` | Structure + placeholder + staleness gate. |
 
-Env: `MODEL_ROUTE_OVERRIDE` (`T1/T2/T3` or alias) sits between flags and pins. Kill switches: `TIER_ROUTING_ENABLED=0/1`, `TIER_ROUTING_<TOOL>_ENABLED=0/1` (disabled scope exits `3` = select manually).
+Env: `MODEL_ROUTE_OVERRIDE` (`T1/T2/T3` or alias) sits between flags and pins.
+
+### Enable / disable
+
+Routing can be switched off per workspace or per tool — e.g. temporarily hand-picking models in one tool while the others keep routing.
+
+* **File (shared, persistent)**: top-level `enabled:` gates the workspace; `tools.<name>.enabled:` gates one tool. Both default `true`.
+* **Env (personal, temporary)**: `TIER_ROUTING_ENABLED=0/1` (workspace), `TIER_ROUTING_<TOOL>_ENABLED=0/1` (per tool). No file edit, no commit.
+* **Precedence (later wins, always logged)**: file workspace → file per-tool → env workspace → env per-tool.
+* **Disabled scope** exits `3` — select the model manually (agents: proceed, never fail). `pin` refuses while disabled. `--check` reports the winning source.
+* **Heartbeat** skips disabled tools and resumes them on re-enable. See `TIER_ROUTING.md` §13.
 
 ---
 

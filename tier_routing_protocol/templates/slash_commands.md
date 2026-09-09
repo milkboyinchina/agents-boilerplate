@@ -3,7 +3,7 @@
 ## /hard-fix
 
 Force Tier 3 + strongest reasoning for this resolve. One-shot, unpinned.
-The hardened successor to hardcoded `/hard-fix-sonnet`.
+Replaces hardcoded model-specific commands, which break on vendor renames.
 
 ```bash
 python3 tier_routing_protocol/resolve_model.py --tier T3 --tool <name> --task <id> --force-tier T3

@@ -8,10 +8,11 @@ Copy this folder into any repository, run `init_teams.py`, and start using struc
 
 ## 💡 Why use this?
 
-Without a teaming protocol, agents jump straight into code: no written plan, scope creep mid-task, untested changes, and every new session rebuilds context from scratch.
+Its biggest advantage is making the workspace **agent- and tool-agnostic**: `plan.md` plus a zero-dependency CLI plus skill files work identically under Antigravity, Claude Code, Cursor, Gemini, or anything else — switching tools mid-project costs nothing. Without a teaming protocol, agents jump straight into code: no written plan, scope creep mid-task, untested changes, and every new session rebuilds context from scratch.
 
 | Without this protocol | With this protocol |
 |:---|:---|
+| Locked into one agent's chat memory and formats — switching tools restarts everything | Plan, lifecycle, and commands live in files any agent reads; teams hand off across tools |
 | Agent codes from a chat prompt — plan lives in conversation history | Green Team writes `plan.md`: exact files, effort, verification steps |
 | "Just do it" executes immediately, surprises included | Amber Team summarizes the plan and asks before touching code |
 | Done means "code written", bugs found later by you | Green Team audits diff + tests; Red Team adversarially verifies in a sandbox |

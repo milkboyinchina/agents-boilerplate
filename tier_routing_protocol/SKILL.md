@@ -19,7 +19,7 @@ Green Team stamps Tier per task-row (`templates/plan_tier_row.md`). Before execu
 python3 tier_routing_protocol/resolve_model.py --tier <T1|T2|T3> --tool <opencode|antigravity|…> --task <id>
 ```
 
-Log the attribution line (`via …`) into the task row. A revert to defaults must always be visible.
+Log the attribution line (`via …`) into the task row. A revert to defaults must always be visible. Exit `3` means routing is disabled for that scope — proceed with manual model selection, do not treat it as failure. Check `--check` for the winning enable/disable source.
 
 ### Step 2: Pin when the default keeps failing
 

@@ -3,6 +3,16 @@
 # `- item` lists, `#` comments, plain or "quoted" scalars. `--validate` rejects
 # anything outside it. Dates are YYYY-MM-DD. `verified: null` fails --validate
 # until filled (or the tool/alias is marked manual).
+#
+# Kill switches (default true everywhere): top-level `enabled` gates the whole
+# workspace; `tools.<name>.enabled` gates one tool. Env overrides for temporary
+# toggles without file edits: TIER_ROUTING_ENABLED=0/1 (workspace),
+# TIER_ROUTING_<TOOL>_ENABLED=0/1 (per tool, e.g. TIER_ROUTING_OPENCODE_ENABLED=0
+# while hand-picking free models in opencode). Precedence: file workspace →
+# file per-tool → env workspace → env per-tool. Disabled scope: resolver exits 3
+# (select manually), pins refuse, heartbeat records `disabled: true` and skips.
+
+enabled: true
 
 tiers:
   T1:
@@ -78,6 +88,7 @@ tools:
     discover:
       models_file: null
     manual: true
+    enabled: true
     verified: null
   antigravity:
     models:
@@ -87,6 +98,7 @@ tools:
     discover:
       models_file: null
     manual: true
+    enabled: true
     verified: null
   codex:
     models:
@@ -96,6 +108,7 @@ tools:
     discover:
       models_file: null
     manual: true
+    enabled: true
     verified: null
   devin:
     models:
@@ -105,6 +118,7 @@ tools:
     discover:
       models_file: null
     manual: true
+    enabled: true
     verified: null
 
 defaults:

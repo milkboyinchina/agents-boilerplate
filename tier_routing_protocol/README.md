@@ -91,7 +91,7 @@ Or tell your agent:
 | `--check [--json]` | Registry, pins, gitignore, cron, directives status. |
 | `--validate [--fail-on-stale]` | Structure + placeholder + staleness gate. |
 
-Env: `MODEL_ROUTE_OVERRIDE` (`T1/T2/T3` or alias) sits between flags and pins.
+Env: `MODEL_ROUTE_OVERRIDE` (`T1/T2/T3` or alias) sits between flags and pins. Kill switches: `TIER_ROUTING_ENABLED=0/1`, `TIER_ROUTING_<TOOL>_ENABLED=0/1` (disabled scope exits `3` = select manually).
 
 ---
 

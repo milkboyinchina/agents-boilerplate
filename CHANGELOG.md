@@ -4,6 +4,20 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 🎚️ [2026-09-09] Tier Routing: Enable/Disable Kill Switches
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - `routing.yaml`: top-level `enabled:` + per-tool `tools.<name>.enabled:` (default true); env `TIER_ROUTING_ENABLED` / `TIER_ROUTING_<TOOL>_ENABLED` for temporary toggles (e.g. hand-picking free models in opencode).
+  - Precedence file workspace → file per-tool → env workspace → env per-tool, winning source logged. Disabled scope: resolver exits `3` (select manually), `pin` refuses, heartbeat records `disabled: true` and skips, refresh leaves it alone, `--check` reports state.
+  - `TIER_ROUTING.md` §13, README/SKILL exit-3 handling. Injected `AGENTS.md` block intentionally frozen.
+  - Fixed: `heartbeat`/`refresh` subcommands rejected `--quiet` (argparse), which also broke the generated cron command — both accept it now.
+- **Quality & Verification Results**:
+  - Matrix in temp workspace: baseline 0, file-off 3, env-off 3, env-beats-file 0, pin-refusal 3, pin/unpin OK, heartbeat skip recorded, refresh proposal excluded disabled tool, re-enable instant.
+  - `py_compile` + shipped `--validate`/`--check` green.
+
+---
+
 ## 📏 [2026-09-09] README Benefit Pass + Workspace Governance
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

@@ -225,6 +225,39 @@ def _is_dead(ident: object) -> bool:
     return ident is None or str(ident).startswith("TODO-")
 
 
+def _parse_flag(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    v = value.strip().lower()
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if v in ("0", "false", "no", "off"):
+        return False
+    return None
+
+
+def enabled_state(reg: dict, tool: str | None = None) -> tuple[bool, str]:
+    """Kill-switch evaluation. Precedence: file workspace → file per-tool →
+    env workspace → env per-tool. Returns (enabled, source description)."""
+    enabled, source = True, "default (enabled)"
+    if reg.get("enabled") is False:
+        enabled, source = False, "routing.yaml enabled: false"
+    if tool is not None:
+        entry = (reg.get("tools", {}) or {}).get(tool, {})
+        if isinstance(entry, dict) and entry.get("enabled") is False:
+            enabled, source = False, f"routing.yaml tools.{tool}.enabled: false"
+    env_ws = _parse_flag(os.environ.get("TIER_ROUTING_ENABLED"))
+    if env_ws is not None:
+        enabled = env_ws
+        source = f"TIER_ROUTING_ENABLED={os.environ.get('TIER_ROUTING_ENABLED')}"
+    if tool is not None:
+        env_tool = _parse_flag(os.environ.get(f"TIER_ROUTING_{tool.upper()}_ENABLED"))
+        if env_tool is not None:
+            enabled = env_tool
+            source = f"TIER_ROUTING_{tool.upper()}_ENABLED={os.environ.get(f'TIER_ROUTING_{tool.upper()}_ENABLED')}"
+    return enabled, source
+
+
 def _state_path(root: Path) -> Path:
     return _resolve_proto_dir(root) / STATE_NAME
 
@@ -279,6 +312,10 @@ def resolve(reg: dict, state: dict, *, tier: str, tool: str, task: str | None,
         out.append(f"warning: {msg} (--lenient: tier descriptors only, no ID)")
         return 0, "\n".join(out)
 
+    on, src = enabled_state(reg, tool)
+    if not on:
+        return 3, (f"tier routing DISABLED for {tool} ({src}) — "
+                   "select model manually (exit 3 = intentional bypass, not an error)")
     layer = f"tier default ({tier})"
     alias = (reg["tools"][tool].get("models", {}) or {}).get(tier)
     if force_tier:
@@ -360,6 +397,10 @@ def run_heartbeat(root: Path, *, quiet: bool, registry_path: str | None = None) 
     tools_out: dict = {}
     ok_count, drift = 0, False
     for name, tool in reg.get("tools", {}).items():
+        on, src = enabled_state(reg, name)
+        if not on:
+            tools_out[name] = {"ok": False, "disabled": True, "source": src}
+            continue
         mf = (tool.get("discover", {}) or {}).get("models_file")
         if tool.get("manual", False) or not mf:
             tools_out[name] = {"ok": False, "error": "no models_file (manual tool — see TIER_ROUTING.md section 7)"}
@@ -409,6 +450,8 @@ def run_refresh(root: Path, *, dry_run: bool, quiet: bool, registry_path: str | 
         return 1
     drifts: list[str] = []
     for name, snap in (hb.get("tools", {}) or {}).items():
+        if snap.get("disabled"):
+            continue  # intentionally off — leave alone, re-checked on re-enable
         if not snap.get("ok"):
             drifts.append(f"- {name}: heartbeat error ({snap.get('error')}) — needs the Q13 fallback branch.")
             continue
@@ -592,11 +635,17 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
     reg, errors = load_registry(root, registry_path)
     proto = _resolve_proto_dir(root)
     gi_lines = _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else []
+    ws_on, ws_src = enabled_state(reg)
+    per_tool = {name: {"enabled": enabled_state(reg, name)[0],
+                       "source": enabled_state(reg, name)[1]}
+                for name in reg.get("tools", {}).keys()}
     result: dict = {
         "protocol_dir": str(proto),
         "registry_ok": not errors,
         "registry_errors": errors,
+        "enabled": {"workspace": ws_on, "source": ws_src},
         "tools": sorted(reg.get("tools", {}).keys()),
+        "tools_enabled": per_tool,
         "alias_count": len(reg.get("aliases", {})),
         "stale_warnings": stale_report(reg, stale_after=stale_after),
         "state_exists": _state_path(root).exists(),
@@ -652,10 +701,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     pin_p.add_argument("--task", required=True, help="Task ID to bind the pin to.")
     unpin_p = sub.add_parser("unpin", help="Release a task pin early.")
     unpin_p.add_argument("--task", required=True, help="Task ID to release.")
-    sub.add_parser("heartbeat", help="Write heartbeat.json from models files (dumb cron).")
+    hb_p = sub.add_parser("heartbeat", help="Write heartbeat.json from models files (dumb cron).")
+    hb_p.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
     ref_p = sub.add_parser("refresh", help="Propose registry updates from heartbeat drift (never applies).")
     ref_p.add_argument("--cron", action="store_true", help="Non-interactive propose-only mode.")
     ref_p.add_argument("--dry-run", action="store_true", help="Print proposal instead of writing it.")
+    ref_p.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
     return parser.parse_args(argv)
 
 
@@ -671,6 +722,11 @@ def main(argv: list[str] | None = None) -> int:
             for e in errors:
                 print(f"  - {e}")
             return 1
+        on, src = enabled_state(reg)
+        if not on:
+            print(f"pin refused: tier routing DISABLED workspace-wide ({src}) — "
+                  "enable it before pinning.")
+            return 3
         if args.alias not in reg.get("aliases", {}):
             print(f"pin aborted: unknown alias {args.alias!r} (see routing.yaml aliases:).")
             return 1

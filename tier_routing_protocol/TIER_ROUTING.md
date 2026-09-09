@@ -131,3 +131,19 @@ The folder itself stays committed. `routing_updates/pending-*.md` stays committe
 - [ ] `refresh --cron` writes only a pending proposal, never `routing.yaml`.
 - [ ] Heartbeat is the cron's sole output; >10-day-old heartbeat treated as unknown.
 - [ ] `.gitignore` contains both runtime files after bootstrap; `--check` green.
+- [ ] Disabled scope exits 3 (manual mode), heartbeat skips it, `--check` reports it.
+
+---
+
+## 13. Enable / disable (kill switches)
+
+Routing can be switched off per workspace or per tool — e.g. hand-picking free models in opencode for a while while antigravity keeps routing.
+
+* **File (shared, persistent)**: top-level `enabled:` gates the workspace; `tools.<name>.enabled:` gates one tool. Both default `true`.
+* **Env (personal, temporary)**: `TIER_ROUTING_ENABLED=0/1` (workspace), `TIER_ROUTING_<TOOL>_ENABLED=0/1` (per tool, e.g. `TIER_ROUTING_OPENCODE_ENABLED=0`). No file edit, no commit.
+* **Precedence (later wins, always logged)**: file workspace → file per-tool → env workspace → env per-tool.
+* **Disabled behavior**: resolver short-circuits — `tier routing DISABLED for <scope> (<source>) — select model manually` — and exits `3`. Agents treat 3 as "proceed manual," never as failure. `pin` under a workspace-disabled scope refuses (a pin you can't resolve is a trap).
+* **Heartbeat**: skips disabled tools (`{"ok": false, "disabled": true}`); refresh leaves them alone. The cron run itself is unchanged, so re-enabling resumes freshness tracking immediately (`verified:` dates force a re-check before the first resolve).
+* **Visibility**: `--check` reports workspace + per-tool enabled state and the winning source.
+
+Note: the `AGENTS.md` directive block is intentionally frozen — kill switches are documented here, in `SKILL.md`, and in `README.md`, never by editing the injected block (which would duplicate it on re-install).

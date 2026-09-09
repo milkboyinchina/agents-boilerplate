@@ -38,12 +38,12 @@ python3 question_protocol/init_questions.py --check
 
 ## 📦 Available Boilerplates
 
-| Folder | Purpose | Quick Start |
-|---|---|---|
-| [`green_amber_red_teams_protocol/`](./green_amber_red_teams_protocol/) | Traffic-Light Multi-Agent Teaming Protocol (Planner / Executor / Auditor) | `python3 green_amber_red_teams_protocol/init_teams.py` |
-| [`handoff_protocol/`](./handoff_protocol/) | Project-Local Session Handoff Protocol (`/handoff-start`, `/handoff-resume`) | `python3 handoff_protocol/handoff.py start` |
-| [`question_protocol/`](./question_protocol/) | Concise Question Protocol (`Q1`, `Q1-a`, free-form overrides) | `python3 question_protocol/init_questions.py` |
-| [`tier_routing_protocol/`](./tier_routing_protocol/) | Tier Routing Protocol (`T1/T2/T3` → per-tool models, pins, weekly heartbeat) | `python3 tier_routing_protocol/resolve_model.py --install` |
+| Folder | Purpose |
+|---|---|
+| [`green_amber_red_teams_protocol/`](./green_amber_red_teams_protocol/) | Traffic-Light Multi-Agent Teaming Protocol (Planner / Executor / Auditor) |
+| [`handoff_protocol/`](./handoff_protocol/) | Project-Local Session Handoff Protocol (`/handoff-start`, `/handoff-resume`) |
+| [`question_protocol/`](./question_protocol/) | Concise Question Protocol (`Q1`, `Q1-a`, free-form overrides) |
+| [`tier_routing_protocol/`](./tier_routing_protocol/) | Tier Routing Protocol (`T1/T2/T3` → per-tool models, pins, weekly heartbeat) |
 
 What changes for you:
 

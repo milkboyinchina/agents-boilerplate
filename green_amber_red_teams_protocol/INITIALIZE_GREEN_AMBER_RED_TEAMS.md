@@ -65,6 +65,7 @@ Available templates: `generic`, `backend`, `frontend`, `mobile`, `devops`.
 - **Role**: 🟢 Green Team
 - Creates or overwrites `green_amber_red_teams/plan.md` with status `📋 PLANNED`.
 - Auto-archives any existing `✅ COMPLETED` plan to `green_amber_red_teams/archive/plan_YYYYMMDD_HHMM.md`.
+- Overwriting a `📋 PLANNED` or `⏳ IN_PROGRESS` plan discards live work: warn the user and require explicit confirmation first.
 - Lists exact affected files and effort estimates in a task table.
 - **Does NOT modify source code.**
 
@@ -89,12 +90,25 @@ Available templates: `generic`, `backend`, `frontend`, `mobile`, `devops`.
 - If defects found: flags tasks as `[ERROR]` or `[INCOMPLETE]` with remediation instructions.
 
 ### `send-redteam`
-- **Role**: 🔴 Red Team Handoff
+- **Role**: 🟢 Green Team (audit-gate handoff)
+- Runs after `green-review` passes and the user confirms dispatching Red Team.
 - Packages recent changes, OpenAPI schemas, compiled binaries, and updates the QA sandbox.
+- Amber Team stays out of the QA loop: the team that passed review hands off, the team that wrote the code does not.
+
+### Red Team test execution (no command — by design)
+
+Red Team testing happens in an **isolated session** (a human tester or a separate agent context with zero developer bias). Input: the `send-redteam` package. Output: an independent defect report. No shortcut covers this step because it must stay outside the planning/execution session.
 
 ### `check-redteam`
-- **Role**: 🔴 Red Team Inspection
-- Reads independent test reports and displays a defect remediation matrix.
+- **Role**: 🟢 Green Team inspection (Red Team keeps no narrative control)
+- Reads Red Team's defect report and displays a defect remediation matrix.
+- Records a Red Team verdict (see below).
+
+### Red Team verdict handling
+
+- **PASS** → plan stays `✅ COMPLETED`. It archives normally on the next `green-plan`.
+- **FAIL** → Green Team reopens affected tasks as `[ERROR]` or `[INCOMPLETE]`, flips Lifecycle Status back to `⏳ IN_PROGRESS`, and hands to Amber Team for fixes. Amber fixes, `green-review` re-audits, and the Red Team gate (`send-redteam` → isolated tests → `check-redteam`) re-runs.
+- `✅ COMPLETED` means *implementation complete and Green-audited*; the Red Team gate is a separate verdict on top, never a silent second completion.
 
 ---
 

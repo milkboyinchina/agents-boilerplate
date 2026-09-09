@@ -4,6 +4,19 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 🚦 [2026-09-09] Green Protocol: Red Team Handoff Ownership + Verdict Flow
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Clarified: Green Team runs `send-redteam` (audit-gate handoff) and `check-redteam` (reads defect report, records verdict); Red Team works in an isolated session with no shortcut.
+  - Verdict handling: PASS stays `✅ COMPLETED`; FAIL reopens tasks, flips to `⏳ IN_PROGRESS`, Amber fixes, `green-review` re-audits, gate re-runs.
+  - `green-plan` overwrite guard for non-completed plans (warn + confirm).
+  - Mirrored across INITIALIZE doc, README (personas + lifecycle), SKILL.md, `init_teams.py` directive block + workspace template. Deployed workspaces pick it up on re-run (`--force`/fresh inject).
+- **Quality & Verification Results**:
+  - Role-label grep consistent (Green on both shortcuts, every mention); `py_compile` + temp `--init-plan` smoke green.
+
+---
+
 ## 📝 [2026-09-09] CONTRIBUTING.md Forking Guide
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

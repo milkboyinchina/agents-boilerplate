@@ -18,7 +18,7 @@ Use this skill whenever the user says:
 |:---|:---|:---|:---|
 | **🟢 Green Team** | **Architect / Planner** | Analyzes requirements, maps affected files, writes `plan.md`, and conducts post-implementation audits. **Touches NO production code.** | `green-plan <prompt>`<br>`green-review` |
 | **🟠 Amber Team** | **Developer / Implementer** | Inspects the plan, confirms with user, writes code, runs tests, and updates task statuses. | `amber-check`<br>`check-plan` |
-| **🔴 Red Team** | **Independent QA / Auditor** | Operates in an isolated sandbox or test harness for adversarial audits and regression verification. | `check-redteam`<br>`send-redteam` |
+| **🔴 Red Team** | **Independent QA / Auditor** | Operates in an isolated sandbox or test harness for adversarial audits and regression verification. Runs in its own session (no shortcut); Green Team bridges via `send-redteam` / `check-redteam`. | *(isolated session)* |
 
 ---
 
@@ -81,8 +81,8 @@ Inspect which agent directive files exist in the project (`AGENTS.md`, `CLAUDE.m
    - `amber-check`: Amber Team inspects `green_amber_red_teams/plan.md`, summarizes it, and asks user: *"Should the agent proceed with executing the plan and its tasks?"*
    - `check-plan`: Reports current lifecycle status, task completion states, and active blockers.
    - `green-review`: Green Team audits Amber Team's git diff and automated tests before clearing completion.
-   - `send-redteam`: Packages recent changes for independent Red Team sandbox verification.
-   - `check-redteam`: Reads Red Team defect reports and presents an actionable remediation matrix.
+   - `send-redteam`: Green Team packages recent changes for independent Red Team sandbox verification (after `green-review` passes + user confirms dispatch).
+   - `check-redteam`: Green Team reads the Red Team defect report, presents an actionable remediation matrix, and records verdict PASS (stays `✅ COMPLETED`) or FAIL (reopen tasks, back to `⏳ IN_PROGRESS`, Amber fixes, re-audit).
 ```
 
 ---

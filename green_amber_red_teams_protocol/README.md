@@ -39,9 +39,9 @@ Or tell any AI assistant:
 
 | Color / Team | Persona | Responsibilities | Key Commands |
 |:---|:---|:---|:---|
-| **🟢 Green Team** | **Architect / Planner** | Analyzes specs, maps affected files, writes `plan.md`, and performs post-implementation audits. **Touches NO production code.** | `green-plan <prompt>`<br>`green-review` |
-| **🟠 Amber Team** | **Developer / Implementer** | Inspects the plan, confirms with user, implements code changes, runs tests, and tracks task states. | `amber-check`<br>`check-plan` |
-| **🔴 Red Team** | **Independent QA / Auditor** | Executes black-box tests, regression suites, and adversarial audits in an isolated sandbox. | `check-redteam`<br>`send-redteam` |
+| **🟢 Green Team** | **Architect / Planner** | Analyzes specs, maps affected files, writes `plan.md`, performs post-implementation audits, runs the Red Team handoff, and triages Red Team verdicts. **Touches NO production code.** | `green-plan <prompt>`<br>`green-review`<br>`send-redteam`<br>`check-redteam` |
+| **🟠 Amber Team** | **Developer / Implementer** | Inspects the plan, confirms with user, implements code changes, runs tests, tracks task states, and fixes Red Team FAIL findings on re-open. | `amber-check`<br>`check-plan` |
+| **🔴 Red Team** | **Independent QA / Auditor** | Executes black-box tests, regression suites, and adversarial audits in an isolated sandbox (no shortcut — package in via `send-redteam`, defect report out via `check-redteam`). | *(isolated session)* |
 
 ---
 
@@ -60,9 +60,11 @@ Or tell any AI assistant:
                                                │
                                  [Audit clean? ──Yes──> Status: ✅ COMPLETED]
                                                │
-[User: send-redteam] ────────> [🔴 Red Team receives fresh artifacts for sandbox audit]
-                                               │
-[User: check-redteam] ───────> [Inspect independent test reports & defect matrix]
+[User: send-redteam] ────────> [🟢 Green Team packages artifacts for sandbox audit (Amber stays out)]
+                                                │
+                                  [🔴 Red Team tests in isolated session → defect report]
+                                                │
+[User: check-redteam] ───────> [🟢 Green Team reads report → verdict: PASS (done) / FAIL (reopen → IN_PROGRESS → Amber fixes → re-audit)]
 ```
 
 ---

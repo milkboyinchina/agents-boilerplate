@@ -50,8 +50,8 @@ DIRECTIVE_BLOCK = """\n\
    - `amber-check`: Amber Team inspects `{workspace}/plan.md`, summarizes it, and asks the user: *"Should the agent proceed with executing the plan and its tasks?"*
    - `check-plan`: Inspects and reports current progress, task statuses, and active blockers from `{workspace}/plan.md`.
    - `green-review`: Green Team audits Amber Team's git diff and automated tests before clearing completion.
-   - `send-redteam`: Packages recent changes, schemas, and binaries for independent Red Team sandbox verification.
-   - `check-redteam`: Reads Red Team defect reports and presents an actionable remediation matrix.
+   - `send-redteam`: Green Team packages recent changes, schemas, and binaries for independent Red Team sandbox verification (after review passes + user confirms dispatch).
+   - `check-redteam`: Green Team reads the Red Team defect report and records verdict PASS (stays `✅ COMPLETED`) or FAIL (reopen tasks, back to `⏳ IN_PROGRESS`, Amber fixes, re-audit).
 """.format(workspace=WORKSPACE_DIR)
 
 WORKSPACE_README = """# 🚦 Traffic-Light Multi-Agent Teaming Workspace (`{workspace}/`)
@@ -64,9 +64,9 @@ This directory is strictly **gitignored** and serves as the single source of tru
 
 | Color / Team | Persona | Responsibilities | Key Commands |
 |:---|:---|:---|:---|
-| **🟢 Green Team** | **Architect / Planner** | Analyzes specs, maps affected files, writes `plan.md`, and performs post-implementation audits. **Touches NO production code.** | `green-plan <prompt>`<br>`green-review` |
-| **🟠 Amber Team** | **Developer / Implementer** | Inspects the plan, confirms with user, implements code changes, runs tests, and tracks task states. | `amber-check`<br>`check-plan` |
-| **🔴 Red Team** | **Independent QA / Auditor** | Executes black-box tests, regression suites, and adversarial audits in an isolated sandbox. | `check-redteam`<br>`send-redteam` |
+| **🟢 Green Team** | **Architect / Planner** | Analyzes specs, maps affected files, writes `plan.md`, audits implementation, runs the Red Team handoff, and triages Red Team verdicts. **Touches NO production code.** | `green-plan <prompt>`<br>`green-review`<br>`send-redteam`<br>`check-redteam` |
+| **🟠 Amber Team** | **Developer / Implementer** | Inspects the plan, confirms with user, implements code changes, runs tests, tracks task states, and fixes Red Team FAIL findings on re-open. | `amber-check`<br>`check-plan` |
+| **🔴 Red Team** | **Independent QA / Auditor** | Executes black-box tests, regression suites, and adversarial audits in an isolated sandbox (no shortcut — package in, defect report out). | *(isolated session)* |
 
 ---
 
@@ -85,9 +85,11 @@ This directory is strictly **gitignored** and serves as the single source of tru
                                                │
                                  [Audit clean? ──Yes──> Status: ✅ COMPLETED]
                                                │
-[User: send-redteam] ────────> [🔴 Red Team receives fresh artifacts for sandbox audit]
-                                               │
-[User: check-redteam] ───────> [Inspect independent test reports & defect matrix]
+[User: send-redteam] ────────> [🟢 Green Team packages artifacts for sandbox audit (Amber stays out)]
+                                                │
+                                  [🔴 Red Team tests in isolated session → defect report]
+                                                │
+[User: check-redteam] ───────> [🟢 Green Team reads report → verdict: PASS (done) / FAIL (reopen → IN_PROGRESS → Amber fixes → re-audit)]
 ```
 
 ---

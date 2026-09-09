@@ -4,6 +4,18 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-09] Root README: Own-Section Quick Start + Workflow One-Liners
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - New `## ⚡ Quick Start` own section: download-or-clone → copy protocol(s) → ask agent with example prompts → verify with `--check`.
+  - One-line workflow summaries under the boilerplate table (planned/confirmed/audited; pause-resume; one-line answers; right-model-per-task).
+  - Trimmed the four duplicated per-boilerplate Usage blocks to Quick Start pointers (documented once, can't drift).
+- **Quality & Verification Results**:
+  - No `Usage in any repo` leftovers; section order intro → Quick Start → table → summaries verified.
+
+---
+
 ## 📝 [2026-09-09] Tier README Refresh + Green Agnosticism Lead
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

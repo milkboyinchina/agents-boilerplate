@@ -2,7 +2,37 @@
 
 A collection of reusable, model-agnostic agent tooling and boilerplates for AI coding assistants (Antigravity, Claude Code, Cursor, Gemini, Google AI Studio, Qwen, Codex).
 
-Each folder is self-contained and can be copy-pasted into any workspace or repository.
+Each folder is self-contained — your agent can copy any of them into a project and implement it there.
+
+---
+
+## ⚡ Quick Start
+
+```bash
+# 1. Get the collection (clone or Download ZIP — no git required)
+git clone https://github.com/milkboyinchina/agents-boilerplate.git
+
+# 2. Copy the protocol(s) you want into your project
+#    (copy, don't move — keeps the collection intact for next time)
+cp -r /path/to/agents-boilerplate/question_protocol ./
+```
+
+```markdown
+# 3. Ask your agent to implement it
+Single protocol:
+"Read `question_protocol/README.md` and implement it in this workspace."
+
+Multiple:
+"Read `green_amber_red_teams_protocol/README.md` and `handoff_protocol/README.md` and implement both."
+
+Lazy (let the table below choose):
+"Read `agents-boilerplate/README.md` and implement the boilerplates I ask for."
+```
+
+```bash
+# 4. Agent runs the init — you verify with --check
+python3 question_protocol/init_questions.py --check
+```
 
 ---
 
@@ -15,6 +45,13 @@ Each folder is self-contained and can be copy-pasted into any workspace or repos
 | [`question_protocol/`](./question_protocol/) | Concise Question Protocol (`Q1`, `Q1-a`, free-form overrides) | `python3 question_protocol/init_questions.py` |
 | [`tier_routing_protocol/`](./tier_routing_protocol/) | Tier Routing Protocol (`T1/T2/T3` → per-tool models, pins, weekly heartbeat) | `python3 tier_routing_protocol/resolve_model.py --install` |
 
+What changes for you:
+
+- `green_amber_red_teams_protocol/` — **No more code-first surprises: every task is planned, confirmed, then audited.**
+- `handoff_protocol/` — **Interruptions stop costing context: pause and resume any session in one command.**
+- `question_protocol/` — **Answer five questions in one short line — skips and late replies included.**
+- `tier_routing_protocol/` — **Right model per task automatically — no hand-picking, no rot when vendors rename.**
+
 ---
 
 ## 🚦 Green-Amber-Red Teams
@@ -25,18 +62,9 @@ This boilerplate provides a structured collaboration protocol:
 - **🟠 Amber Team** — Developer / Executor: reviews the plan, asks to proceed, writes code.
 - **🔴 Red Team** — Independent QA / Auditor: adversarial black-box verification.
 
-### Usage in any repo
+### Usage
 
-```bash
-# 1. Copy the boilerplate into your project
-cp -r /path/to/agents-boilerplate/green_amber_red_teams_protocol ./
-
-# 2. Run the bootstrap
-python3 green_amber_red_teams_protocol/init_teams.py
-
-# 3. Optional: create an initial plan
-python3 green_amber_red_teams_protocol/init_teams.py --init-plan "Add user authentication" --template backend
-```
+See [Quick Start](#-quick-start): copy the folder, then run `python3 green_amber_red_teams_protocol/init_teams.py` (add `--init-plan "Title" --template backend` to seed a plan).
 
 Or tell your agent:
 
@@ -53,21 +81,9 @@ This boilerplate provides **project-local session continuity**:
 - **9-field template**: captures active task, files changed, verification, rollback, blockers, and next steps.
 - **Auto-detects** `green_amber_red_teams/plan.md` status when present.
 
-### Usage in any repo
+### Usage
 
-```bash
-# 1. Copy the boilerplate into your project
-cp -r /path/to/agents-boilerplate/handoff_protocol ./
-
-# 2. Start a handoff
-python3 handoff_protocol/handoff.py start --no-prompt
-
-# 3. Resume later
-python3 handoff_protocol/handoff.py resume
-
-# 4. Archive when done
-python3 handoff_protocol/handoff.py done
-```
+See [Quick Start](#-quick-start): copy the folder, then `python3 handoff_protocol/handoff.py start --no-prompt` (`resume` to continue, `done` to archive).
 
 ---
 
@@ -81,18 +97,9 @@ This boilerplate provides **concise multi-question turns**:
 - **Compaction-safe**: counter in `question_protocol/state.json` + transcript scan recovery.
 - **Re-baseline**: at >99 closed, agent proposes `Archive Q1-Q99 and re-baseline to Q1?` (approval only).
 
-### Usage in any repo
+### Usage
 
-```bash
-# 1. Copy the boilerplate into your project
-cp -r /path/to/agents-boilerplate/question_protocol ./
-
-# 2. Run the bootstrap
-python3 question_protocol/init_questions.py
-
-# 3. Validate a transcript
-python3 question_protocol/init_questions.py --validate question_protocol/examples/good_example.md
-```
+See [Quick Start](#-quick-start): copy the folder, then run `python3 question_protocol/init_questions.py` (validate with `--validate question_protocol/examples/good_example.md`).
 
 ---
 
@@ -106,24 +113,9 @@ This boilerplate routes **task tiers to per-tool models** without hardcoding IDs
 - **Failover, never hard-fail**: dead IDs fall down chains with loud warnings.
 - **Session-free freshness**: weekly dumb cron writes `heartbeat.json`; drift → pending proposal → one `Q1-a` approval.
 
-### Usage in any repo
+### Usage
 
-```bash
-# 1. Copy the boilerplate into your project
-cp -r /path/to/agents-boilerplate/tier_routing_protocol ./
-
-# 2. Bootstrap (gitignore runtime files + directives)
-python3 tier_routing_protocol/resolve_model.py --install
-
-# 3. Fill IDs via the add-tool workflow, then validate
-python3 tier_routing_protocol/resolve_model.py --validate
-
-# 4. Resolve before executing a task
-python3 tier_routing_protocol/resolve_model.py --tier T2 --tool opencode --task 3
-
-# 5. Weekly freshness signal (OS-aware install, manual fallback in cron/)
-python3 tier_routing_protocol/resolve_model.py --install-cron
-```
+See [Quick Start](#-quick-start): copy the folder, then `python3 tier_routing_protocol/resolve_model.py --install` (fill IDs via add-tool, `--validate`, resolve per task, `--install-cron` for freshness).
 
 ---
 

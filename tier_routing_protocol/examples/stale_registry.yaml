@@ -1,0 +1,30 @@
+# Demo fixture: --validate --fail-on-stale exits 1 here (verified dates >30d old).
+tiers:
+  T1:
+    description: "Trivial."
+    needs: "fast"
+  T2:
+    description: "Standard."
+    needs: "balanced"
+  T3:
+    description: "Hard."
+    needs: "strongest"
+
+aliases:
+  fast:
+    description: "Old entry."
+    verified: 2025-01-01
+    fallbacks: []
+    ids:
+      opencode: "vendor-a/fast-1"
+
+tools:
+  opencode:
+    models:
+      T1: fast
+      T2: fast
+      T3: fast
+    discover:
+      models_file: null
+    manual: true
+    verified: 2025-01-01

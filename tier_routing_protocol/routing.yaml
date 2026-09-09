@@ -1,0 +1,112 @@
+# Model routing registry — the SINGLE place raw model IDs may appear.
+# Keep to the supported subset: 2-space indent, `key: value`, nested maps,
+# `- item` lists, `#` comments, plain or "quoted" scalars. `--validate` rejects
+# anything outside it. Dates are YYYY-MM-DD. `verified: null` fails --validate
+# until filled (or the tool/alias is marked manual).
+
+tiers:
+  T1:
+    description: "Trivial: formatting, single-file edits, Q&A, doc touch-ups."
+    needs: "fast/cheap model, small context OK"
+  T2:
+    description: "Standard: multi-file features, refactors, test coverage."
+    needs: "balanced model, large context"
+  T3:
+    description: "Hard: architecture, hairy debugging, security, open design."
+    needs: "strongest reasoning available"
+
+# Portable aliases. Commands, plans, and chat reference ONLY these names.
+aliases:
+  fast:
+    description: "Cheapest fast model for T1."
+    verified: null
+    fallbacks: []
+    ids:
+      opencode: "TODO-opencode-fast-id"
+      antigravity: "TODO-antigravity-fast-id"
+  balanced:
+    description: "Balanced default for T2."
+    verified: null
+    fallbacks:
+      - fast
+    ids:
+      opencode: "TODO-opencode-balanced-id"
+      antigravity: "TODO-antigravity-balanced-id"
+  frontier:
+    description: "Strongest reasoning for T3."
+    verified: null
+    fallbacks:
+      - balanced
+    ids:
+      opencode: "TODO-opencode-frontier-id"
+      antigravity: "TODO-antigravity-frontier-id"
+  claude-sonnet:
+    description: "Claude Sonnet class — manual pin target when T3 default fails."
+    verified: null
+    fallbacks:
+      - balanced
+    ids:
+      opencode: "TODO-opencode-sonnet-id"
+      antigravity: "TODO-antigravity-sonnet-id"
+  claude-opus:
+    description: "Claude Opus class — manual pin target for hardest tasks."
+    verified: null
+    fallbacks:
+      - claude-sonnet
+    ids:
+      opencode: "TODO-opencode-opus-id"
+      antigravity: "TODO-antigravity-opus-id"
+  gemini-flash:
+    description: "Gemini Flash class (e.g. Antigravity T3 high variant)."
+    verified: null
+    fallbacks:
+      - balanced
+    ids:
+      opencode: "TODO-opencode-gemini-flash-id"
+      antigravity: "TODO-antigravity-gemini-flash-id"
+
+# One section per tool. Tiers map to ALIASES, never IDs.
+# discover.models_file: file-path-only hint (Q13-a). If a tool exposes no
+# models file, leave `models_file: null` and mark `manual: true` — see
+# TIER_ROUTING.md section 7 for the agent's ask-the-user branch.
+tools:
+  opencode:
+    models:
+      T1: fast
+      T2: balanced
+      T3: frontier
+    discover:
+      models_file: null
+    manual: true
+    verified: null
+  antigravity:
+    models:
+      T1: fast
+      T2: balanced
+      T3: gemini-flash
+    discover:
+      models_file: null
+    manual: true
+    verified: null
+  codex:
+    models:
+      T1: fast
+      T2: balanced
+      T3: frontier
+    discover:
+      models_file: null
+    manual: true
+    verified: null
+  devin:
+    models:
+      T1: fast
+      T2: balanced
+      T3: frontier
+    discover:
+      models_file: null
+    manual: true
+    verified: null
+
+defaults:
+  # Used when a tool section is missing: warn (--lenient) or error (--strict).
+  note: "No tool-neutral IDs exist by design. Fill tools:<name> via add-tool."

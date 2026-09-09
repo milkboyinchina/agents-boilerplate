@@ -1,0 +1,84 @@
+# Filled example: what routing.yaml looks like after the add-tool workflow.
+# Copy the shape, NOT the IDs — these are illustrative placeholders.
+# Every aliases.*.verified / tools.*.verified carries a real date; --validate
+# treats missing dates as stale.
+
+tiers:
+  T1:
+    description: "Trivial."
+    needs: "fast/cheap"
+  T2:
+    description: "Standard."
+    needs: "balanced"
+  T3:
+    description: "Hard."
+    needs: "strongest reasoning"
+
+aliases:
+  fast:
+    description: "Cheapest fast model."
+    verified: 2026-09-09
+    fallbacks: []
+    ids:
+      opencode: "vendor-a/fast-1"
+      antigravity: "fast-1"
+      codex: "fast-1"
+      devin: "fast-1"
+  balanced:
+    description: "Balanced default."
+    verified: 2026-09-09
+    fallbacks:
+      - fast
+    ids:
+      opencode: "vendor-a/balanced-2"
+      antigravity: "balanced-2"
+      codex: "balanced-2"
+      devin: "balanced-2"
+  claude-sonnet:
+    description: "Pin target."
+    verified: 2026-09-09
+    fallbacks:
+      - balanced
+    ids:
+      opencode: "vendor-b/sonnet-4"
+      antigravity: "sonnet-4"
+      codex: "sonnet-4"
+      devin: "sonnet-4"
+
+tools:
+  opencode:
+    models:
+      T1: fast
+      T2: balanced
+      T3: balanced
+    discover:
+      models_file: ".opencode/models.json"
+    manual: false
+    verified: 2026-09-09
+  antigravity:
+    models:
+      T1: fast
+      T2: balanced
+      T3: claude-sonnet
+    discover:
+      models_file: ".antigravity/models.json"
+    manual: false
+    verified: 2026-09-09
+  codex:
+    models:
+      T1: fast
+      T2: balanced
+      T3: balanced
+    discover:
+      models_file: null
+    manual: true
+    verified: 2026-09-09
+  devin:
+    models:
+      T1: fast
+      T2: balanced
+      T3: balanced
+    discover:
+      models_file: null
+    manual: true
+    verified: 2026-09-09

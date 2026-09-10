@@ -556,7 +556,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="init_teams.py",
-        description="Bootstrap the Green/Amber/Red multi-agent teaming workspace in any repository.",
+        description="Bootstrap the Green/Amber/Red multi-agent teaming workspace in any repository. See root README install profiles (minimal/standard/full).",
     )
     parser.add_argument(
         "--version",

@@ -721,7 +721,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="resolve_model.py",
-        description="Resolve task tiers (T1/T2/T3) to per-tool model IDs; maintain the registry.",
+        description="Resolve task tiers (T1/T2/T3) to per-tool model IDs; maintain the registry. See root README install profiles (minimal/standard/full).",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--tier", choices=list(TIERS), help="Task tier to resolve.")

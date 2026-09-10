@@ -392,7 +392,7 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="handoff.py",
-        description="Project-local session handoff protocol.",
+        description="Project-local session handoff protocol. See root README install profiles (minimal/standard/full).",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--dry-run", action="store_true", help="Preview actions without writing files.")

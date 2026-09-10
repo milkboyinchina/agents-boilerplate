@@ -36,6 +36,24 @@ Lazy (let the table below choose):
 python3 question_protocol/init_questions.py --check
 ```
 
+### Install profiles (pick one sentence, skip the interrogation)
+
+Fresh installs used to start with five scoping questions. Don't answer them — pick a profile instead; the agent expands it locally. Defaults are recorded here so no agent re-derives them.
+
+| Profile | Installs | Defaults |
+|:---|:---|:---|
+| `minimal` | green plan workspace | No seeded plan, no red side, no cron |
+| `standard` | green + question + handoff CLIs | No seeded plan, no red side, no cron, tier registry placeholders allowed (`--validate` fails loudly by design) |
+| `full` | everything: green + question + handoff + tier IDs + red side + cron | Seed title asked once, red topology asked once, cron installed |
+
+```markdown
+"Install the minimal profile from agents-boilerplate."
+"Install the standard profile from agents-boilerplate."
+"Install the full profile from agents-boilerplate (red side: same-machine second workspace)."
+```
+
+Deviations are one clause: *"standard profile, but seed the plan 'Auth API' with the backend template"* — still one sentence, not five questions.
+
 ---
 
 ## 📦 Available Boilerplates

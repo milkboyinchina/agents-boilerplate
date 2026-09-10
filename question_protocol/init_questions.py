@@ -278,7 +278,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="init_questions.py",
-        description="Bootstrap the Concise Question Protocol (Q1/Q1-a) and validate transcripts.",
+        description="Bootstrap the Concise Question Protocol (Q1/Q1-a) and validate transcripts. See root README install profiles (minimal/standard/full).",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without writing to disk.")

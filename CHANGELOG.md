@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Install Profiles (minimal/standard/full) Kill the Five Questions
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Root README Quick Start: profile table + one-paste prompts + recorded defaults (seed-no, red-skip, cron-skip, placeholders-OK, handoff-CLI-only).
+  - All four `--help` texts cross-point to the profiles (one line each, no behavior change).
+- **Quality & Verification Results**:
+  - `py_compile` ×4; `--help` pointers present ×4; `--check`/`--validate` green; each profile maps 1:1 onto existing commands (no new flags).
+
+---
+
 ## 📝 [2026-09-10] Root README Humor Pass + Token Cost Tables + COMPARISON.md
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

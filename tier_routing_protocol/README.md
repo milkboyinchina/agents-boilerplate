@@ -30,21 +30,20 @@ On a vanilla agent setup, every task runs on whatever model the session started 
 ## ⚡ Quick Start
 
 ```bash
-# 1. Copy this folder into your project
-cp -r /path/to/agents-boilerplate/tier_routing_protocol ./
+# Place the collection per root README Quick Start, then run from workspace root.
+# 1. Bootstrap (gitignore runtime files + directives)
+python3 agents-boilerplate/tier_routing_protocol/resolve_model.py --install
 
-# 2. Bootstrap (gitignore runtime files + directives)
-python3 tier_routing_protocol/resolve_model.py --install
+# 2. Fill IDs via the add-tool workflow, then validate
+python3 agents-boilerplate/tier_routing_protocol/resolve_model.py --validate
 
-# 3. Fill IDs via the add-tool workflow, then validate
-python3 tier_routing_protocol/resolve_model.py --validate
+# 3. Resolve before executing a task
+python3 agents-boilerplate/tier_routing_protocol/resolve_model.py --tier T2 --tool opencode --task 3
 
-# 4. Resolve before executing a task
-python3 tier_routing_protocol/resolve_model.py --tier T2 --tool opencode --task 3
-
-# 5. Weekly freshness signal (OS-aware install, manual fallback in cron/)
-python3 tier_routing_protocol/resolve_model.py --install-cron
+# 4. Weekly freshness signal (OS-aware install, manual fallback in cron/)
+python3 agents-boilerplate/tier_routing_protocol/resolve_model.py --install-cron
 ```
+Standalone fallback (project can't carry the collection): copy this folder to root (`cp -r agents-boilerplate/tier_routing_protocol ./`) and run the same commands without the `agents-boilerplate/` prefix.
 
 Or tell your agent:
 

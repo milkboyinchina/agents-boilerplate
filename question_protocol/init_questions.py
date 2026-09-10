@@ -107,6 +107,25 @@ def _is_legacy_state(root: Path) -> bool:
     return isinstance(data, dict) and bool(data)
 
 
+def _dual_presence(root: Path) -> Path | None:
+    """A stale same-named local copy coexists with agents-boilerplate/. Returns its path, else None."""
+    script_dir = Path(__file__).parent.resolve()
+    candidate = (root / script_dir.name).resolve()
+    if candidate.exists() and candidate != script_dir:
+        return root / script_dir.name
+    return None
+
+
+def _warn_dual_presence(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under --check --json.
+    dup = _dual_presence(root)
+    if dup is not None:
+        print(f"[WARN] dual presence: {dup} duplicates the invoked collection copy. "
+              "Choose: (a) reference — delete the local copy, keep agents-boilerplate/; "
+              "(b) vendor — run the local copy instead. Proceeding with the invoked copy.",
+              file=sys.stderr)
+
+
 def _warn_legacy(root: Path) -> None:
     # stderr: stdout must stay pure JSON under --check --json.
     if _is_legacy_state(root):
@@ -256,6 +275,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "skill_exists": (proto / "SKILL.md").exists(),
         "workspace_dir": str(_workspace_dir(root)),
         "state_exists": _state_path(root).exists(),
+        "dual_presence": str(_dual_presence(root)) if _dual_presence(root) else None,
         "legacy_state_found": _is_legacy_state(root),
         "next_id": state.get("next_id"),
         "epoch": state.get("epoch"),
@@ -313,6 +333,7 @@ def main(argv: list[str] | None = None) -> int:
         status_check(root, json_output=args.json, quiet=args.quiet)
         return 0
 
+    _warn_dual_presence(root)
     ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
 
     agent_files = detect_agent_files(root)

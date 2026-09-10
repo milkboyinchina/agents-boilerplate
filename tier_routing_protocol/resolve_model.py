@@ -162,6 +162,25 @@ def _resolve_proto_dir(root: Path) -> Path:
     return root / PROTOCOL_DIR
 
 
+def _dual_presence(root: Path) -> Path | None:
+    """A stale same-named local copy coexists with agents-boilerplate/. Returns its path, else None."""
+    script_dir = Path(__file__).parent.resolve()
+    candidate = (root / script_dir.name).resolve()
+    if candidate.exists() and candidate != script_dir:
+        return root / script_dir.name
+    return None
+
+
+def _warn_dual_presence(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under --check --json.
+    dup = _dual_presence(root)
+    if dup is not None:
+        print(f"[WARN] dual presence: {dup} duplicates the invoked collection copy. "
+              "Choose: (a) reference — delete the local copy, keep agents-boilerplate/; "
+              "(b) vendor — run the local copy instead. Proceeding with the invoked copy.",
+              file=sys.stderr)
+
+
 def _workspace_dir(root: Path) -> Path:
     return root / WORKSPACE_DIR
 
@@ -688,9 +707,11 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
     per_tool = {name: {"enabled": enabled_state(reg, name)[0],
                        "source": enabled_state(reg, name)[1]}
                 for name in reg.get("tools", {}).keys()}
+    dup = _dual_presence(root)
     result: dict = {
         "protocol_dir": str(proto),
         "workspace_dir": str(_workspace_dir(root)),
+        "dual_presence": str(dup) if dup else None,
         "registry_ok": not errors,
         "registry_errors": errors,
         "enabled": {"workspace": ws_on, "source": ws_src},
@@ -837,6 +858,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.install:
+        _warn_dual_presence(root)
         ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
         agent_files = detect_agent_files(root)
         if agent_files:

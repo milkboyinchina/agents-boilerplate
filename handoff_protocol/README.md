@@ -27,18 +27,17 @@ Without session handoffs, every interruption (closed IDE, model switch, paused t
 ## ⚡ Quick Start
 
 ```bash
-# 1. Copy this folder into your project
-cp -r /path/to/agents-boilerplate/handoff_protocol ./
+# Place the collection per root README Quick Start, then run from workspace root.
+# 1. Start a handoff
+python3 agents-boilerplate/handoff_protocol/handoff.py start --no-prompt
 
-# 2. Start a handoff
-python3 handoff_protocol/handoff.py start --no-prompt
+# 2. Later, resume from it
+python3 agents-boilerplate/handoff_protocol/handoff.py resume
 
-# 3. Later, resume from it
-python3 handoff_protocol/handoff.py resume
-
-# 4. When the task is complete, archive the handoff
-python3 handoff_protocol/handoff.py done
+# 3. When the task is complete, archive the handoff
+python3 agents-boilerplate/handoff_protocol/handoff.py done
 ```
+Standalone fallback (project can't carry the collection): copy this folder to root (`cp -r agents-boilerplate/handoff_protocol ./`) and run the same commands without the `agents-boilerplate/` prefix.
 
 Or tell your agent:
 

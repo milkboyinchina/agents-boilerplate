@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Q47-a Enforcement: Reference-Flow READMEs + Dual-Presence Detection
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Root cause of the ses_f7657fa5bffeF474C3aBXlopar duplication: per-protocol READMEs said "copy this folder" while root said "reference the collection" — agents obeyed the file they were reading. All four protocol Quick Starts now point at the root reference flow (standalone copy kept as fallback).
+  - Q47-a detection built (was docs-only): all four CLIs warn on dual presence (stderr, JSON-safe) with reference-vs-vendor choice before any write; `--check` reports `dual_presence` (None when clean).
+- **Quality & Verification Results**:
+  - `py_compile` ×4; dual fixture: warn fires on write paths, flag set on all four `--check`s, JSON stdout pure; negative control (no copy → None, zero stderr); fresh reference-path green install (plan + ledger + skeleton).
+
+---
+
 ## 📝 [2026-09-10] Quick Start: Place Collection In Workspace + CLI Gitignore Backup
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

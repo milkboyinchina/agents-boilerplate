@@ -44,6 +44,25 @@ def _is_legacy_workspace(root: Path) -> bool:
     return (legacy / ARCHIVE_DIR).exists()
 
 
+def _dual_presence(root: Path) -> Path | None:
+    """A stale same-named local copy coexists with agents-boilerplate/. Returns its path, else None."""
+    script_dir = Path(__file__).parent.resolve()
+    candidate = (root / script_dir.name).resolve()
+    if candidate.exists() and candidate != script_dir:
+        return root / script_dir.name
+    return None
+
+
+def _warn_dual_presence(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under status --json.
+    dup = _dual_presence(root)
+    if dup is not None:
+        print(f"[WARN] dual presence: {dup} duplicates the invoked collection copy. "
+              "Choose: (a) reference — delete the local copy, keep agents-boilerplate/; "
+              "(b) vendor — run the local copy instead. Proceeding with the invoked copy.",
+              file=sys.stderr)
+
+
 def _warn_legacy(root: Path) -> None:
     # stderr: stdout must stay pure JSON under status --json.
     if _is_legacy_workspace(root):
@@ -368,9 +387,11 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
     active = find_active_handoff(workspace)
     archived = sorted((workspace / ARCHIVE_DIR).glob("handoff-*.md")) if (workspace / ARCHIVE_DIR).exists() else []
 
+    dup = _dual_presence(root)
     result: dict[str, Any] = {
         "workspace": str(workspace),
         "workspace_exists": workspace.exists(),
+        "dual_presence": str(dup) if dup else None,
         "legacy_workspace_found": _is_legacy_workspace(root),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
         "gitignore_ok": GITIGNORE_LINE in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
@@ -426,6 +447,7 @@ def main(argv: list[str] | None = None) -> int:
     root = Path.cwd()
 
     if args.command == "start":
+        _warn_dual_presence(root)
         _warn_legacy(root)
         return start_handoff(args, root)
     if args.command == "resume":

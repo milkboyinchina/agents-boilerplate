@@ -44,6 +44,25 @@ def _proto_dir_name() -> str:
     return Path(__file__).parent.name
 
 
+def _dual_presence(root: Path) -> Path | None:
+    """A stale same-named local copy coexists with agents-boilerplate/. Returns its path, else None."""
+    script_dir = Path(__file__).parent.resolve()
+    candidate = (root / script_dir.name).resolve()
+    if candidate.exists() and candidate != script_dir:
+        return root / script_dir.name
+    return None
+
+
+def _warn_dual_presence(root: Path) -> None:
+    # stderr: stdout must stay pure JSON under --check --json.
+    dup = _dual_presence(root)
+    if dup is not None:
+        print(f"[WARN] dual presence: {dup} duplicates the invoked collection copy. "
+              "Choose: (a) reference — delete the local copy, keep agents-boilerplate/; "
+              "(b) vendor — run the local copy instead. Proceeding with the invoked copy.",
+              file=sys.stderr)
+
+
 def _packet_gitignore_lines() -> list[str]:
     proto = _proto_dir_name()
     return [f"{proto}/redteam/inbox/*",
@@ -520,6 +539,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
     result: dict = {
         "workspace_dir": str(workspace),
         "workspace_exists": workspace.exists(),
+        "dual_presence": str(_dual_presence(root)) if _dual_presence(root) else None,
         "legacy_workspace_found": legacy.exists(),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
         "gitignore_ok": GITIGNORE_LINE in gi_lines,
@@ -619,6 +639,7 @@ def main(argv: list[str] | None = None) -> int:
         status_check(root, json_output=args.json, quiet=args.quiet)
         return 0
 
+    _warn_dual_presence(root)
     proto = _proto_dir(root)
     side = args.side or _read_config_side(proto) or "green"
     if side == "green":

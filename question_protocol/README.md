@@ -41,15 +41,14 @@ Full before/after transcripts: [`COMPARISON.md`](../COMPARISON.md). Root rollup 
 ## ⚡ Quick Start
 
 ```bash
-# 1. Copy this folder into your project
-cp -r /path/to/agents-boilerplate/question_protocol ./
+# Place the collection per root README Quick Start, then run from workspace root.
+# 1. Run the bootstrap
+python3 agents-boilerplate/question_protocol/init_questions.py
 
-# 2. Run the bootstrap
-python3 question_protocol/init_questions.py
-
-# 3. Validate a transcript
-python3 question_protocol/init_questions.py --validate question_protocol/examples/good_example.md
+# 2. Validate a transcript
+python3 agents-boilerplate/question_protocol/init_questions.py --validate agents-boilerplate/question_protocol/examples/good_example.md
 ```
+Standalone fallback (project can't carry the collection): copy this folder to root (`cp -r agents-boilerplate/question_protocol ./`) and run the same commands without the `agents-boilerplate/` prefix.
 
 Or tell your agent:
 

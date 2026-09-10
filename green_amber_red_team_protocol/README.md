@@ -24,15 +24,17 @@ Its biggest advantage is making the workspace **agent- and tool-agnostic**: `pla
 ## ⚡ Quick Start
 
 ```bash
-# 1. Drop this folder into your project (green+amber side)
-python3 green_amber_red_team_protocol/init_teams.py
+# Place the collection per root README Quick Start, then run from workspace root.
+# Green+amber side:
+python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py
 
-# 2. Optional: seed an initial plan
-python3 green_amber_red_team_protocol/init_teams.py --init-plan "Add user authentication" --template backend
+# Optional: seed an initial plan
+python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py --init-plan "Add user authentication" --template backend
 
-# 3. Red side: copy the folder to the red workspace and initialize there
-python3 green_amber_red_team_protocol/init_teams.py --side red
+# Red side: place the collection in the red workspace, then init there
+python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py --side red
 ```
+Standalone fallback (project can't carry the collection): copy this folder to root (`cp -r agents-boilerplate/green_amber_red_team_protocol ./`) and run the same commands without the `agents-boilerplate/` prefix.
 
 Or tell any AI assistant:
 

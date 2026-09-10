@@ -158,10 +158,16 @@ See [Quick Start](#-quick-start): copy the folder, then `python3 tier_routing_pr
 
 ## 🗺️ Future roadmap
 
-Two protocols on the drawing board (tracked in [`TODO.md`](./TODO.md) — design questions open, nothing built yet):
+Planned structural change (tracked in [`TODO.md`](./TODO.md)): consolidate all runtime state under a hidden `.protocol/` dir — one `.gitignore` line instead of ~10, and a clean workspace root.
+
+Six protocols on the drawing board (tracked in [`TODO.md`](./TODO.md) — design questions open, nothing built yet):
 
 - **`architect_protocol/`** — durable codebase cartography: map new or existing apps so agents can look up blueprints and track progress per area. (Transient `plan.md` tells you the mission; this tells you the terrain.)
 - **`agent_builder_protocol/`** — agent scaffolding installer: populate empty workspaces (or upgrade existing ones) with the right `AGENTS.md`, rules, and skills for the stack.
+- **`memory_protocol/`** — long-term memory across sessions: handoff saves one session, this one remembers everything learned across missions.
+- **`decision_protocol/`** — decision records: green plans capture *what*, this captures *why* (numbered, statused, annotated onto the architect map).
+- **`release_protocol/`** — release gates: version, changelog, migration notes, rollout/rollback — the definition of shippable this collection currently lacks.
+- **`onboarding_protocol/`** — guided codebase tours for newcomers, generated from the architect map (builds after architect lands).
 
 ---
 

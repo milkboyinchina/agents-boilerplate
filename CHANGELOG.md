@@ -4,6 +4,26 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Roadmap: `.protocol/` Consolidation Tracked
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[PLANNED]` (tracking only — no paths moved)
+- **Scope / Components**:
+  - `TODO.md` structural section + root roadmap paragraph: `.protocol/` runtime consolidation (Q58/Q59 open). Six-protocol count corrected in roadmap header.
+- **Quality & Verification Results**:
+  - Markdown renders; links resolve; no code touched.
+
+---
+
+## 📝 [2026-09-10] Roadmap Grows: Memory, Decision, Release, Onboarding
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[PLANNED]` (tracking only — no protocol code)
+- **Scope / Components**:
+  - `TODO.md` + root roadmap gain `memory_protocol/`, `decision_protocol/`, `release_protocol/`, `onboarding_protocol/` (onboarding explicitly scheduled after architect).
+- **Quality & Verification Results**:
+  - Markdown renders; links resolve; no code touched.
+
+---
+
 ## 📝 [2026-09-10] TODO.md + Future Roadmap (Architect, Agent-Builder)
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[PLANNED]` (tracking file only — no protocol code)

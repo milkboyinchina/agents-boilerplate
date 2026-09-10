@@ -11,21 +11,21 @@ Each folder is self-contained — your agent can copy any of them into a project
 ## ⚡ Quick Start
 
 ```bash
-# 1. Get the collection (clone or Download ZIP — no git required)
+# 1. Place the collection inside your workspace (clone, Download ZIP, or copy the folder in)
 git clone https://github.com/milkboyinchina/agents-boilerplate.git
 
-# 2. Copy the protocol(s) you want into your project
-#    (copy, don't move — keeps the collection intact for next time)
-cp -r /path/to/agents-boilerplate/question_protocol ./
+# 2. Keep it out of your project's commits (add to .gitignore if it exists —
+#    create it if it doesn't; each init CLI below also ensures this line)
+agents-boilerplate/
 ```
 
 ```markdown
 # 3. Ask your agent to implement it
 Single protocol:
-"Read `question_protocol/README.md` and implement it in this workspace."
+"Read `agents-boilerplate/question_protocol/README.md` and implement it in this workspace."
 
 Multiple:
-"Read `green_amber_red_team_protocol/README.md` and `handoff_protocol/README.md` and implement both."
+"Read `agents-boilerplate/green_amber_red_team_protocol/README.md` and `agents-boilerplate/handoff_protocol/README.md` and implement both."
 
 Lazy (let the table below choose):
 "Read `agents-boilerplate/README.md` and implement the boilerplates I ask for."
@@ -33,8 +33,10 @@ Lazy (let the table below choose):
 
 ```bash
 # 4. Agent runs the init — you verify with --check
-python3 question_protocol/init_questions.py --check
+python3 agents-boilerplate/question_protocol/init_questions.py --check
 ```
+
+Standalone fallback (project can't carry the collection): copy one protocol folder to root instead — `cp -r agents-boilerplate/question_protocol ./` — then follow that protocol's README with root-level paths.
 
 ### Install profiles (pick one sentence, skip the interrogation)
 

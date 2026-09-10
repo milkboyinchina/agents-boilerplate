@@ -225,6 +225,8 @@ def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool, side: str = "gre
 
     wanted = [GITIGNORE_LINE] if side == "green" else []
     wanted += _packet_gitignore_lines()
+    if (root / "agents-boilerplate").exists():
+        wanted.append("agents-boilerplate/")
     missing = [ln for ln in wanted if ln not in content.splitlines()]
     if not missing:
         _log("[OK] .gitignore already covers team workspace + packet contents", quiet=quiet)

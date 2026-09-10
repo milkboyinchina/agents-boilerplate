@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Quick Start: Place Collection In Workspace + CLI Gitignore Backup
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Quick Start step 2 rewritten: place the whole `agents-boilerplate/` in the workspace + `.gitignore` it (create file if missing); steps 3–4 use collection paths; per-protocol copy kept as standalone fallback.
+  - All four `ensure_gitignore` fns also append `agents-boilerplate/` idempotently, guarded on the dir existing (manual step + automatic ensure reinforce each other).
+- **Quality & Verification Results**:
+  - `py_compile` ×4; positive case (collection present → line added) and negative case (absent → no line) both green; idempotent re-runs `[OK]`/`[SKIP]`; `--check` green on all CLIs.
+
+---
+
 ## 📝 [2026-09-10] Install Profiles (minimal/standard/full) Kill the Five Questions
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

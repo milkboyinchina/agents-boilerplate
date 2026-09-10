@@ -537,7 +537,10 @@ RUNTIME_GITIGNORE_LINES = [f"{WORKSPACE_DIR}/{HEARTBEAT_NAME}", f"{WORKSPACE_DIR
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
     gitignore = root / ".gitignore"
     lines = _read_text(gitignore).splitlines()
-    missing = [ln for ln in RUNTIME_GITIGNORE_LINES if ln not in lines]
+    wanted = list(RUNTIME_GITIGNORE_LINES)
+    if (root / "agents-boilerplate").exists():
+        wanted.append("agents-boilerplate/")
+    missing = [ln for ln in wanted if ln not in lines]
     if not missing:
         _log("[OK] .gitignore already covers model routing runtime files", quiet=quiet)
         return False

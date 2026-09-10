@@ -133,13 +133,17 @@ def detect_agent_files(root: Path) -> list[str]:
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
     """Gitignore runtime counter state in target workspaces (opt out by deleting the line)."""
     gitignore = root / ".gitignore"
-    line = f"{WORKSPACE_DIR}/{STATE_NAME}"
-    if line in _read_text(gitignore).splitlines():
-        _log(f"[OK] .gitignore already contains {line}", quiet=quiet)
+    wanted = [f"{WORKSPACE_DIR}/{STATE_NAME}"]
+    if (root / "agents-boilerplate").exists():
+        wanted.append("agents-boilerplate/")
+    missing = [ln for ln in wanted if ln not in _read_text(gitignore).splitlines()]
+    if not missing:
+        _log("[OK] .gitignore already covers question workspace state", quiet=quiet)
         return False
-    new_content = _read_text(gitignore).rstrip("\n") + "\n" + line + "\n"
+    new_content = _read_text(gitignore).rstrip("\n") + "\n" + "\n".join(missing) + "\n"
     if dry_run:
-        _log(f"[DRY-RUN] Would append {line!r} to {gitignore}", quiet=quiet)
+        for ln in missing:
+            _log(f"[DRY-RUN] Would append {ln!r} to {gitignore}", quiet=quiet)
         return True
     gitignore.write_text(new_content, encoding="utf-8")
     _log(f"[UPDATE] {gitignore}", quiet=quiet)

@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] TODO.md + Future Roadmap (Architect, Agent-Builder)
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[PLANNED]` (tracking file only — no protocol code)
+- **Scope / Components**:
+  - New root `TODO.md`: planned `architect_protocol/` (durable app cartography + progress ledger) and `agent_builder_protocol/` (workspace scaffolding + config audit/upgrade), plus accepted backlog.
+  - Root README `## 🗺️ Future roadmap` section pointing at it.
+- **Quality & Verification Results**:
+  - Markdown renders; links resolve; no code touched.
+
+---
+
 ## 📝 [2026-09-10] Q52-a Field-Log Papercuts: Handoff Epilog + Add-Tool Pointers
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

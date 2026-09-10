@@ -156,6 +156,15 @@ See [Quick Start](#-quick-start): copy the folder, then `python3 tier_routing_pr
 
 ---
 
+## 🗺️ Future roadmap
+
+Two protocols on the drawing board (tracked in [`TODO.md`](./TODO.md) — design questions open, nothing built yet):
+
+- **`architect_protocol/`** — durable codebase cartography: map new or existing apps so agents can look up blueprints and track progress per area. (Transient `plan.md` tells you the mission; this tells you the terrain.)
+- **`agent_builder_protocol/`** — agent scaffolding installer: populate empty workspaces (or upgrade existing ones) with the right `AGENTS.md`, rules, and skills for the stack.
+
+---
+
 ## 📝 Changelog
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the agent execution log and version history.

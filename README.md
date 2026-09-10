@@ -1,8 +1,10 @@
 # agents-boilerplate
 
-A collection of reusable, model-agnostic agent tooling and boilerplates for AI coding assistants (Antigravity, Claude Code, Cursor, Gemini, Google AI Studio, Qwen, Codex).
+So you're CTO-ing a team of AIs now. Congratulations — middle management, but the employees are tireless and the coffee budget is zero.
 
-Each folder is self-contained — your agent can copy any of them into a project and implement it there.
+This is a collection of reusable, model-agnostic agent tooling and boilerplates for AI coding assistants (Antigravity, Claude Code, Cursor, Gemini, Google AI Studio, Qwen, Codex).
+
+Each folder is self-contained — your agent can copy any of them into a project and implement it there. New here? Skim [`COMPARISON.md`](./COMPARISON.md) first: before/after transcripts per protocol, so you can see what changes before installing anything.
 
 ---
 
@@ -45,18 +47,31 @@ python3 question_protocol/init_questions.py --check
 | [`question_protocol/`](./question_protocol/) | Concise Question Protocol (`Q1`, `Q1-a`, free-form overrides) |
 | [`tier_routing_protocol/`](./tier_routing_protocol/) | Tier Routing Protocol (`T1/T2/T3` → per-tool models, pins, weekly heartbeat) |
 
-What changes for you:
+What changes for you (your mileage may vary — figures below are heuristics, not invoices):
 
 - `green_amber_red_team_protocol/` — **No more code-first surprises: every task is planned, confirmed, then audited.**
 - `handoff_protocol/` — **Interruptions stop costing context: pause and resume any session in one command.**
 - `question_protocol/` — **Answer five questions in one short line — skips and late replies included.**
 - `tier_routing_protocol/` — **Right model per task automatically — no hand-picking, no rot when vendors rename.**
 
+See [`COMPARISON.md`](./COMPARISON.md) for before/after transcripts per protocol.
+
+### Token cost: with vs without
+
+Methodology: ~4 chars/token heuristic for a "typical mission" baseline; actuals vary by model, tokenizer, question length, and session habits — **your mileage may vary**, treat percentages as directional. Single trivial questions are net-negative for every protocol (just ask bare yes/no); fixed directive blocks (~8 lines each) amortize to noise over a real session.
+
+| Protocol | Without (est.) | With (est.) | Saving | Pros / cons |
+|:---|:---|:---|:---|:---|
+| Green | ~250–450/mission (re-scope chat + redoing wrong-scope work) | ~180–330 (plan written once + confirm) | ~25–40% | + kills scope-creep and redo; − plan file bigger than trivial tasks |
+| Handoff | ~300–500 per interruption (full re-brief + re-answers) | ~230–370 once (9-field file + resume read) | ~40–60% when interrupted | + rescues complex work; − file bigger than tiny tasks |
+| Question | ~300–400 per 3-Q turn (retyped answers + clarification rounds) | ~90–100 (short labels + terse echo) | ~65–75% | + more upfront ask formatting, − tiny replies, unambiguous, skip-safe |
+| Tier | ~50–100/task hand-picking + 100s on wrong-model retries | ~20/resolve, registry amortized | ~50–80% | + right model automatically, no rename rot; − registry fill + staleness upkeep |
+
 ---
 
 ## 🚦 Green-Amber-Red Teams
 
-This boilerplate provides a structured collaboration protocol:
+Three agents walk into a codebase. Thanks to this protocol, they don't all start coding. This boilerplate provides a structured collaboration protocol:
 
 - **🟢 Green Team** — Planner / Architect: drafts `plan.md`, touches no code.
 - **🟠 Amber Team** — Developer / Executor: reviews the plan, asks to proceed, writes code.
@@ -76,7 +91,7 @@ Or tell your agent:
 
 ## 🔄 Handoff Protocol
 
-This boilerplate provides **project-local session continuity**:
+Your agent has the memory of a goldfish after a context window. This boilerplate provides **project-local session continuity**:
 
 - **Manual triggers only**: `/handoff-start` and `/handoff-resume`.
 - **Single output location**: `handoff_workspace/` inside the project workspace.
@@ -91,7 +106,7 @@ See [Quick Start](#-quick-start): copy the folder, then `python3 handoff_protoco
 
 ## ❓ Question Protocol
 
-This boilerplate provides **concise multi-question turns**:
+Five questions, one short line, zero "wait, which question was that?" This boilerplate provides **concise multi-question turns**:
 
 - **Conversation-scoped labels**: `Q1, Q2...` never reuse mid-conversation — skipped questions stay answerable later.
 - **Choice labels**: `Q1-a/b/c` (case-insensitive), including binary `yes/no`.
@@ -107,7 +122,7 @@ See [Quick Start](#-quick-start): copy the folder, then run `python3 question_pr
 
 ## 🎚️ Tier Routing Protocol
 
-This boilerplate routes **task tiers to per-tool models** without hardcoding IDs:
+Stop hand-picking models like you're drafting fantasy football. This boilerplate routes **task tiers to per-tool models** without hardcoding IDs:
 
 - **Tiers, not IDs**: `T1` trivial / `T2` standard / `T3` hard — stamped per task by Green Team.
 - **One ID home**: raw model IDs live only in `routing.yaml` `aliases:` (`claude-opus`, `gemini-flash` everywhere else).

@@ -17,6 +17,8 @@ Its biggest advantage is making the workspace **agent- and tool-agnostic**: `pla
 | "Just do it" executes immediately, surprises included | Amber Team summarizes the plan and asks before touching code |
 | Done means "code written", bugs found later by you | Green Team audits diff + tests; Red Team adversarially verifies in a sandbox |
 
+*Token verdict: ~25–40% per mission (plan once vs re-scoping in chat); net-negative below trivial — don't plan a one-line fix. Full table: [`README.md`](../README.md).* Before/after transcripts: [`COMPARISON.md`](../COMPARISON.md).
+
 ---
 
 ## ⚡ Quick Start

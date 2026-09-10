@@ -18,6 +18,8 @@ Without session handoffs, every interruption (closed IDE, model switch, paused t
 |:---|:---|
 | Interrupted session = lost state, re-explain from zero | `/handoff-start` captures 9 fields: task, files, verification, rollback, next steps |
 | New agent guesses where work stopped | `/handoff-resume` continues from exact Next Steps in one command |
+
+*Token verdict: ~40–60% when interrupted (one file + one read vs full re-brief); net-negative for tiny tasks. Full table: [`README.md`](../README.md).* Before/after transcripts: [`COMPARISON.md`](../COMPARISON.md).
 | Switching models means re-briefing the replacement | Handoff file is model-agnostic — any agent resumes it |
 
 ---

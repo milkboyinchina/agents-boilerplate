@@ -4,6 +4,19 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Root README Humor Pass + Token Cost Tables + COMPARISON.md
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Root README light-touch humor (playful headers/intros, dry procedures; commands/numbers untouched) + `### Token cost: with vs without` 5-row table (alphabetical) + methodology/YMMV note + `COMPARISON.md` link.
+  - New `COMPARISON.md`: before/after transcripts per protocol (alphabetical), all files plain markdown.
+  - Protocol verdict lines: question full sub-table; green/handoff/tier one-liners linking root table + COMPARISON.
+  - Governance: alphabetical-listing rule added to authoring rules (green 10-command table exempt, own sort key).
+- **Quality & Verification Results**:
+  - Root/protocol figure consistency checked; links resolve (`COMPARISON.md`, `../README.md`, `../COMPARISON.md`); no code touched.
+
+---
+
 ## ❓ [2026-09-10] Question Protocol: Token Efficiency (Delta + Inline + Importance)
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

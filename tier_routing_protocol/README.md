@@ -23,6 +23,8 @@ On a vanilla agent setup, every task runs on whatever model the session started 
 | Model IDs pasted into prompts and plans — renames silently break them | IDs live only in `routing.yaml`; a rename is a 1–2 line edit plus `--validate` |
 | Dead or retired model fails the task outright | Failover chains degrade loudly; weekly heartbeat keeps mappings fresh |
 
+*Token verdict: ~50–80% per task (one local resolve vs hand-picking + wrong-model retries); cheapest per-use of the four. Full table: [`README.md`](../README.md).* Before/after transcripts: [`COMPARISON.md`](../COMPARISON.md).
+
 ---
 
 ## ⚡ Quick Start

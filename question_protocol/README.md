@@ -23,6 +23,19 @@ Without labeled questions, multi-question turns force you to retype full sentenc
 | Skipped question is forgotten by next turn — or re-asked forever, burning tokens | `Qn!` stays OPEN; plain skips auto-park (still answerable, zero re-list cost) |
 | Compaction erases what was asked | Counter in `state.json` + transcript scan recovers numbering |
 
+### Token cost: with vs without
+
+Heuristic (~4 chars/token, medium questions) — **your mileage may vary** by model, tokenizer, and session habits:
+
+| Situation | Without (est.) | With (est.) | Saving |
+|:---|:---|:---|:---|
+| 3 questions, all answered | ~300–400 (retyped answers + clarification round) | ~90–100 (labels + terse echo) | ~65–75% |
+| Trivial skip, 10-turn session | ~30–70 (re-asked or re-listed) | 0 after the ask (auto-park) | ~100% of re-list |
+| Interruption + recovery | ~300 (full re-brief) | ~50 (`!` opens re-listed) | ~80% |
+| Single trivial binary Q | ~30 (bare yes/no wins) | ~35–40 | net-negative — don't invoke here |
+
+Full before/after transcripts: [`COMPARISON.md`](../COMPARISON.md). Root rollup table: [`README.md`](../README.md).
+
 ---
 
 ## ⚡ Quick Start

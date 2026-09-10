@@ -2,6 +2,19 @@
 
 Tracked future work for this collection. Newest first. Checked items move to `CHANGELOG.md` on completion.
 
+## Tackle order (recommended sequence — check off top-down)
+
+- [ ] 1. Test workspace re-copy + idempotent re-run (validate shipped work first, always)
+- [ ] 2. `.protocol/` consolidation (Q58/Q59 decided at build — freezes all paths; the churn ends here)
+- [ ] 3. Uninstall build (Q60/Q61 decided at build — closes install → reinstall → uninstall)
+- [ ] 4. `agent_builder_protocol/` (base for all workspaces, built on frozen paths/blocks)
+- [ ] 5. `architect_protocol/`
+- [ ] 6. `memory_protocol/`
+- [ ] 7. `decision_protocol/`
+- [ ] 8. `release_protocol/`
+- [ ] 9. `onboarding_protocol/` (after architect — generated from its map)
+- [ ] 10. Tier IDs fill (whenever vendor catalog decided — floats, independent of sequence)
+
 ## Planned structural changes
 
 - [ ] **`.protocol/` runtime consolidation** — move all runtime state under one hidden dir: `green_amber_red_workspace/`, `handoff_workspace/`, `question_workspace/`, `tier_routing_workspace/`, and the `redteam/` exchange dirs all relocate under `.protocol/`; sources (`*_protocol/`) stay at root, tracked. Single `.gitignore` line (`.protocol/`) replaces ~10 granular ones. Open: whether `redteam/` exchange moves too (Q58), gitignore form (Q59). Broad but mechanical: 4 CLI path constants, `--check` keys, cron reinstall, doc sweep, third migration wave with legacy detection (same one-version-grace pattern).

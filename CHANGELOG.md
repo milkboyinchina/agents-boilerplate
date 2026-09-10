@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Q52-a Field-Log Papercuts: Handoff Epilog + Add-Tool Pointers
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Handoff parser epilog (shown in every subcommand `--help`): global flags precede the subcommand — the exact `start --no-prompt --yes` trap from the field log, documented not behavior-changed.
+  - Add-tool pointers: tier README Quick Start + root profiles row now anchor `TIER_ROUTING.md` §8.
+- **Quality & Verification Results**:
+  - `start --help` renders the epilog; `py_compile` green; other CLIs `--check`/`--validate` green; no behavioral diffs.
+
+---
+
 ## 📝 [2026-09-10] Q51-a Field-Log Fixes: Eager Workspaces, --yes, Handoff Inject, Cron Self-Heal
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

@@ -34,7 +34,7 @@ On a vanilla agent setup, every task runs on whatever model the session started 
 # 1. Bootstrap (gitignore runtime files + directives)
 python3 agents-boilerplate/tier_routing_protocol/resolve_model.py --install
 
-# 2. Fill IDs via the add-tool workflow, then validate
+# 2. Fill IDs via the add-tool workflow (TIER_ROUTING.md §8), then validate
 python3 agents-boilerplate/tier_routing_protocol/resolve_model.py --validate
 
 # 3. Resolve before executing a task

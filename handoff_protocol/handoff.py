@@ -484,6 +484,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="handoff.py",
         description="Project-local session handoff protocol. See root README install profiles (minimal/standard/full).",
+        epilog="Global flags (--dry-run, --quiet, --yes) precede the subcommand: "
+               "handoff.py --yes start --no-prompt (not: start --no-prompt --yes).",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--dry-run", action="store_true", help="Preview actions without writing files.")

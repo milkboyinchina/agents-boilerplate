@@ -56,6 +56,22 @@ Fresh installs used to start with five scoping questions. Don't answer them — 
 
 Deviations are one clause: *"standard profile, but seed the plan 'Auth API' with the backend template"* — still one sentence, not five questions.
 
+### Reinstall / upgrade (already installed? read this)
+
+Upgrades are boring on purpose — everything is idempotent:
+
+```bash
+# 1. Refresh the collection (pull, re-copy, or re-download over the old one)
+git -C agents-boilerplate pull   # or: cp -r /fresh/agents-boilerplate ./agents-boilerplate
+
+# 2. Re-run the inits you already ran — same commands, same flags
+python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py
+python3 agents-boilerplate/question_protocol/init_questions.py
+# ... and so on per installed protocol
+```
+
+What survives: plans, ledgers, handoffs, pins, counters, packet archives, and `AGENTS.md` blocks (re-runs print `[SKIP]`/`[OK]`, never duplicate or overwrite — except `--force`, which you asked for). What changes: CLI behavior, templates, and directive wording pick up the new version. If a release renames paths, its `CHANGELOG.md` entry carries the exact migration commands — follow that entry, then re-run the inits.
+
 ---
 
 ## 📦 Available Boilerplates

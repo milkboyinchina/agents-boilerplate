@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Quick Start: Reinstall/Upgrade Flow Documented
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Root README Quick Start: reinstall/upgrade subsection (refresh collection + re-run inits; idempotency contract; changelog carries migrations).
+  - `TODO.md` backlog: standing rule to keep the upgrade promise true (migrations in changelog, re-runnable inits).
+- **Quality & Verification Results**:
+  - Markdown renders; commands match existing CLI flags; no code touched.
+
+---
+
 ## 📝 [2026-09-10] Roadmap: `.protocol/` Consolidation Tracked
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[PLANNED]` (tracking only — no paths moved)

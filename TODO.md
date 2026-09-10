@@ -19,6 +19,7 @@ Tracked future work for this collection. Newest first. Checked items move to `CH
 
 - [ ] Re-copy + idempotent re-run in `android_app_auto_tester` to pick up post-`3f4e3c8` fixes.
 - [ ] Fill real tier model IDs via the add-tool workflow (blocked on vendor catalog choices, not code).
+- [ ] Reinstall/upgrade flow is now documented (root README Quick Start: pull/re-copy + re-run inits, idempotent by contract, changelog carries migrations). Keep it true: every future path rename must ship its migration commands in the changelog entry, and every init must stay re-runnable without data loss.
 
 ## Done (see CHANGELOG.md for details)
 

@@ -29,7 +29,7 @@ If `question_protocol/init_questions.py` exists, ensure directives are installed
 python3 question_protocol/init_questions.py --check
 ```
 
-If not initialized, run the bootstrap (or manually append the directive block from `init_questions.py` to `AGENTS.md` / `CLAUDE.md` / `.cursorrules` / `GEMINI.md`). With no directive file present, the bootstrap asks (Q1-a) to create `AGENTS.md`.
+If not initialized, run the bootstrap (or manually append the directive block from `init_questions.py` to `AGENTS.md` / `CLAUDE.md` / `.cursorrules` / `GEMINI.md`). With no directive file present, the bootstrap asks (Q1-a) to create `AGENTS.md` (`--yes` assumes yes for scripted installs).
 
 ### Step 2: Ask with labels (delta + inline + importance)
 

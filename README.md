@@ -45,8 +45,8 @@ Fresh installs used to start with five scoping questions. Don't answer them — 
 | Profile | Installs | Defaults |
 |:---|:---|:---|
 | `minimal` | green plan workspace | No seeded plan, no red side, no cron |
-| `standard` | green + question + handoff CLIs | No seeded plan, no red side, no cron, tier registry placeholders allowed (`--validate` fails loudly by design) |
-| `full` | everything: green + question + handoff + tier IDs + red side + cron | Seed title asked once, red topology asked once, cron installed |
+| `standard` | green + question + handoff CLIs (tier not installed; add it in `full`) | No seeded plan, no red side, no cron |
+| `full` | everything: green + question + handoff + tier registry (as-is) + red side + cron | Seed title asked once, red topology asked once, cron installed. Tier IDs stay TODO placeholders until the add-tool workflow fills them — bare `--validate` passes with stale warnings; `resolve` fails loudly (`no live ID`, exit 1) and `--validate --fail-on-stale` exits 1 |
 
 ```markdown
 "Install the minimal profile from agents-boilerplate."

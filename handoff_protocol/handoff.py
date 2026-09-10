@@ -50,15 +50,34 @@ def detect_agent_files(root: Path) -> list[str]:
     return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
 
 
-def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+def inject_directives(root: Path, agent_files: list[str], *, dry_run: bool, quiet: bool) -> list[str]:
+    changed: list[str] = []
+    for name in agent_files:
+        path = root / name
+        existing = _read_text(path)
+        if DIRECTIVE_BLOCK.strip() in existing.strip():
+            _log(f"[SKIP] {name} already contains Handoff directives", quiet=quiet)
+            continue
+        if dry_run:
+            _log(f"[DRY-RUN] Would append directives to {name}", quiet=quiet)
+            changed.append(name)
+            continue
+        path.write_text(existing.rstrip("\n") + "\n\n" + DIRECTIVE_BLOCK, encoding="utf-8")
+        _log(f"[UPDATE] {name}", quiet=quiet)
+        changed.append(name)
+    return changed
+
+
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool, assume_yes: bool = False) -> bool:
     """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
-    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip,
+    unless --yes was passed (scripted installs)."""
     target = root / "AGENTS.md"
     if dry_run:
         _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
         return False
-    answer = "b"
-    if sys.stdin.isatty() and not quiet:
+    answer = "a" if assume_yes else "b"
+    if not assume_yes and sys.stdin.isatty() and not quiet:
         print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
               "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
         try:
@@ -437,6 +456,8 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
         "legacy_workspace_found": _is_legacy_workspace(root),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
         "gitignore_ok": GITIGNORE_LINE in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
+        "directives_ok": any(DIRECTIVE_BLOCK.strip() in _read_text(root / f).strip()
+                             for f in detect_agent_files(root)),
         "active_handoff": str(active) if active else None,
         "archived_count": len(archived),
         "latest_archived": str(archived[-1]) if archived else None,
@@ -467,6 +488,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--dry-run", action="store_true", help="Preview actions without writing files.")
     parser.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
+    parser.add_argument("--yes", action="store_true", help="Assume yes to prompts (e.g. create AGENTS.md). For scripted installs.")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -493,8 +515,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "start":
         _warn_dual_presence(root)
         _warn_legacy(root)
-        if not detect_agent_files(root):
-            _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
+        agent_files = detect_agent_files(root)
+        if agent_files:
+            inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet)
+        else:
+            _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet, assume_yes=args.yes)
         return start_handoff(args, root)
     if args.command == "resume":
         return resume_handoff(args, root)

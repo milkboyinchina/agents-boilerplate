@@ -155,15 +155,16 @@ def detect_agent_files(root: Path) -> list[str]:
     return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
 
 
-def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool, assume_yes: bool = False) -> bool:
     """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
-    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip,
+    unless --yes was passed (scripted installs)."""
     target = root / "AGENTS.md"
     if dry_run:
         _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
         return False
-    answer = "b"
-    if sys.stdin.isatty() and not quiet:
+    answer = "a" if assume_yes else "b"
+    if not assume_yes and sys.stdin.isatty() and not quiet:
         print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
               "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
         try:
@@ -341,6 +342,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--check", action="store_true", help="Report whether the workspace is already initialized.")
     parser.add_argument("--json", action="store_true", help="Output --check results as JSON.")
     parser.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
+    parser.add_argument("--yes", action="store_true", help="Assume yes to prompts (e.g. create AGENTS.md). For scripted installs.")
     parser.add_argument("--validate", metavar="FILE", help="Lint a transcript file for Q-label compliance.")
     return parser.parse_args(argv)
 
@@ -366,12 +368,16 @@ def main(argv: list[str] | None = None) -> int:
 
     _warn_dual_presence(root)
     ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
+    if args.dry_run:
+        _log(f"[DRY-RUN] Would create directory: {_workspace_dir(root)}", quiet=args.quiet)
+    else:
+        _workspace_dir(root).mkdir(parents=True, exist_ok=True)
 
     agent_files = detect_agent_files(root)
     if agent_files:
         inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet, force=args.force)
     else:
-        _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
+        _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet, assume_yes=args.yes)
 
     if not args.quiet:
         proto = _resolve_protocol_dir(root)

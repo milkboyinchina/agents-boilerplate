@@ -339,15 +339,16 @@ def detect_agent_files(root: Path) -> list[str]:
     return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
 
 
-def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool, assume_yes: bool = False) -> bool:
     """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
-    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip,
+    unless --yes was passed (scripted installs)."""
     target = root / "AGENTS.md"
     if dry_run:
         _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
         return False
-    answer = "b"
-    if sys.stdin.isatty() and not quiet:
+    answer = "a" if assume_yes else "b"
+    if not assume_yes and sys.stdin.isatty() and not quiet:
         print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
               "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
         try:
@@ -584,6 +585,8 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "plan_exists": plan_path.exists(),
         "ledger_exists": (workspace / LEDGER_NAME).exists(),
         "agent_files": detect_agent_files(root),
+        "directives_ok": any(DIRECTIVE_BLOCK.strip() in _read_text(root / f).strip()
+                             for f in detect_agent_files(root)),
         "directives_hint": (None if detect_agent_files(root) else
                             "No directive file found — run init and answer Q1-a to create AGENTS.md."),
         "project_type": detect_project_type(root),
@@ -658,6 +661,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Suppress non-essential output.",
     )
     parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Assume yes to prompts (e.g. create AGENTS.md). For scripted installs.",
+    )
+    parser.add_argument(
         "--side",
         choices=["green", "red"],
         default=None,
@@ -691,7 +699,7 @@ def main(argv: list[str] | None = None) -> int:
     if agent_files:
         inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet)
     else:
-        _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
+        _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet, assume_yes=args.yes)
 
     if args.init_plan:
         generate_plan(root, args.init_plan, args.template, dry_run=args.dry_run, quiet=args.quiet)

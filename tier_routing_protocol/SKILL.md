@@ -13,7 +13,7 @@ Tasks declare tiers. Only `routing.yaml` `aliases:` holds raw model IDs. Never i
 
 ### Step 0: Install (once per workspace)
 
-`python3 tier_routing_protocol/resolve_model.py --install` (with no directive file present, it asks Q1-a to create `AGENTS.md`).
+`python3 tier_routing_protocol/resolve_model.py --install` (with no directive file present, it asks Q1-a to create `AGENTS.md`; `--yes` assumes yes for scripted installs).
 
 ### Step 1: Assign (Green Team plans, Amber Team resolves)
 

@@ -584,15 +584,16 @@ def detect_agent_files(root: Path) -> list[str]:
     return [n for n in AGENT_DIRECTIVE_FILES if (root / n).exists()]
 
 
-def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool, assume_yes: bool = False) -> bool:
     """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
-    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip,
+    unless --yes was passed (scripted installs)."""
     target = root / "AGENTS.md"
     if dry_run:
         _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
         return False
-    answer = "b"
-    if sys.stdin.isatty() and not quiet:
+    answer = "a" if assume_yes else "b"
+    if not assume_yes and sys.stdin.isatty() and not quiet:
         print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
               "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
         try:
@@ -626,25 +627,45 @@ def inject_directives(root: Path, agent_files: list, *, dry_run: bool, quiet: bo
 
 
 def _cron_command(root: Path) -> str:
-    script = _resolve_proto_dir(root).resolve() / "resolve_model.py"
-    return f"{sys.executable} {script} heartbeat --quiet"
+    return f"{sys.executable} {_cron_script_path(root)} heartbeat --quiet"
 
 
-def cron_present(root: Path) -> bool:
+def _cron_script_path(root: Path) -> str:
+    # Absolute path the scheduler must invoke (reference-flow aware).
+    return str((_resolve_proto_dir(root) / "resolve_model.py").resolve())
+
+
+def cron_status(root: Path) -> dict:
+    """Marker present? Command path valid? A stale entry (marker without a live
+    script path) must heal, not report OK."""
     system = platform.system()
+    expected = _cron_script_path(root)
     try:
         if system == "Linux":
             out = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=10).stdout
-            return CRON_MARKER in out
+            marker = CRON_MARKER in out
+            return {"present": marker, "path_ok": (expected in out) if marker else False}
         if system == "Darwin":
             out = subprocess.run(["launchctl", "list"], capture_output=True, text=True, timeout=10).stdout
-            return "tierrouting.heartbeat" in out
+            marker = "tierrouting.heartbeat" in out
+            dest = Path.home() / "Library" / "LaunchAgents" / "com.tierrouting.heartbeat.plist"
+            try:
+                path_ok = marker and expected in dest.read_text(encoding="utf-8")
+            except OSError:
+                path_ok = False
+            return {"present": marker, "path_ok": path_ok}
         if system == "Windows":
-            out = subprocess.run(["schtasks", "/Query", "/FO", "LIST"], capture_output=True, text=True, timeout=15).stdout
-            return CRON_MARKER in out
+            out = subprocess.run(["schtasks", "/Query", "/FO", "LIST", "/V"], capture_output=True, text=True, timeout=15).stdout
+            marker = CRON_MARKER in out
+            return {"present": marker, "path_ok": (expected in out) if marker else False}
     except (subprocess.SubprocessError, FileNotFoundError, OSError):
         pass
-    return False
+    return {"present": False, "path_ok": False}
+
+
+def cron_present(root: Path) -> bool:
+    st = cron_status(root)
+    return bool(st["present"] and st["path_ok"])
 
 
 def manual_cron_docs(root: Path) -> dict[str, str]:
@@ -665,8 +686,12 @@ def install_cron(root: Path, *, quiet: bool) -> int:
         if system == "Linux":
             cur = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=10).stdout
             if CRON_MARKER in cur:
-                _log("[OK] cron entry already installed", quiet=quiet)
-                return 0
+                if _cron_script_path(root) in cur:
+                    _log("[OK] cron entry already installed", quiet=quiet)
+                    return 0
+                print("[WARN] cron marker present but script path is stale — replacing entry.")
+                cur = "\n".join(ln for ln in cur.splitlines()
+                                if CRON_MARKER not in ln and "resolve_model.py heartbeat" not in ln)
             new = cur + f"# {CRON_MARKER}\n0 2 * * 0 {cmd}\n"
             subprocess.run(["crontab", "-"], input=new, capture_output=True, text=True, timeout=10, check=True)
             _log("[UPDATE] cron entry installed (weekly Sun 02:00)", quiet=quiet)
@@ -793,6 +818,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without writing.")
     parser.add_argument("--force", action="store_true", help="Re-write directive block even if present.")
     parser.add_argument("--quiet", action="store_true", help="Suppress non-essential output.")
+    parser.add_argument("--yes", action="store_true", help="Assume yes to prompts (e.g. create AGENTS.md). For scripted installs.")
     parser.add_argument("--json", action="store_true", help="JSON output for --check.")
     parser.add_argument("--check", action="store_true", help="Report workspace status.")
     parser.add_argument("--validate", action="store_true", help="Validate routing.yaml.")
@@ -892,11 +918,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.install:
         _warn_dual_presence(root)
         ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
+        if args.dry_run:
+            _log(f"[DRY-RUN] Would create directory: {_workspace_dir(root)}", quiet=args.quiet)
+        else:
+            _workspace_dir(root).mkdir(parents=True, exist_ok=True)
         agent_files = detect_agent_files(root)
         if agent_files:
             inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet, force=args.force)
         else:
-            _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
+            _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet, assume_yes=args.yes)
         if not args.quiet:
             print("\n✅ Tier routing workspace is ready.")
             print("   Next: fill routing.yaml IDs via the add-tool workflow, then --validate.")

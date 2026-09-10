@@ -4,6 +4,22 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Q51-a Field-Log Fixes: Eager Workspaces, --yes, Handoff Inject, Cron Self-Heal
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Eager workspace dirs at install: `question_workspace/`, `tier_routing_workspace/` (dirs only — state/heartbeat stay first-use; a `full` install now yields all four runtimes deterministically).
+  - `--yes` flag ×4 (non-interactive Q1-a for AGENTS.md creation); piped stdin without it keeps INFO-skip (never hangs).
+  - Handoff gains `inject_directives()` for existing files (multi-protocol installs no longer drop the handoff block).
+  - Cron self-heal: `--install-cron` replaces marker-present/dead-path entries with a warning; `--check` validates the command path (`cron_present` now means marker + live path).
+  - Fixed live bugs found in verify: question eager-mkdir referenced bare `dry_run`; heartbeat crashed on stale `proto` reference; `pin`/`unpin` rejected `--quiet`.
+  - Profiles table wording corrected (standard excludes tier; bare `--validate` passes with stale warnings, loud failure is at resolve/`--fail-on-stale`).
+- **Quality & Verification Results**:
+  - `py_compile` ×4; piped `--yes` end-to-end ×4 (AGENTS.md created, checks green); pty Q1-a/Q1-b paths; handoff inject into existing file; stale cron replaced then uninstalled cleanly; idempotent re-runs; fixtures green.
+  - Isolated subagent run (5/5 PASS): fresh full-profile `--yes` install (AGENTS.md all 4 blocks, all runtimes, idempotent re-runs, no duplicates); piped-no-`--yes` skips without hanging; dual-presence flag on all four `--check`s; cron stale→replace→uninstall→restore cycle byte-clean; fixtures + stale gates green. Follow-ups from its report: added `directives_ok` to green/handoff `--check` (parity with question/tier); cron quirk judged test-artifact-only (real stale shape always contains `resolve_model.py heartbeat`, which the filter covers) — no code change.
+
+---
+
 ## 📝 [2026-09-10] Q46-a: Ask-to-Create AGENTS.md in All Four Inits
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

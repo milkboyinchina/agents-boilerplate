@@ -2,9 +2,11 @@
 
 A portable, zero-dependency convention for concise multi-question turns: agents label `Q1, Q2...` and `Q1-a/b/c...`, users reply with short labels or free-form overrides.
 
-Unlike ad-hoc questioning, this protocol is **conversation-scoped and compaction-safe**:
+Unlike ad-hoc questioning, this protocol is **conversation-scoped, token-lean, and compaction-safe**:
 - `Q1, Q2...` never reuse mid-conversation — skipped questions stay answerable later.
 - `Q1: / Q1. / Q1=` free-form aliases, case-insensitive options, `skip Qn` support.
+- Delta asks + inline options: new questions full-text once, carried opens collapse to one line.
+- Importance flags: `Qn!` persists through skip + compaction; plain skips auto-park (zero re-list cost).
 - Counter survives compaction via `question_workspace/state.json` + transcript scan.
 - Re-baseline at >99 closed questions, only on user approval.
 
@@ -18,7 +20,7 @@ Without labeled questions, multi-question turns force you to retype full sentenc
 |:---|:---|
 | Retype full answers or quote blocks to stay clear | Reply `Q1-a, Q2: custom text` — short labels, full context |
 | "Yes" could mean any of three questions | Every choice is `Qn-a/b` (binary included), case-insensitive |
-| Skipped question is forgotten by next turn | `Qn: skip` stays OPEN; late answers by original number resolve |
+| Skipped question is forgotten by next turn — or re-asked forever, burning tokens | `Qn!` stays OPEN; plain skips auto-park (still answerable, zero re-list cost) |
 | Compaction erases what was asked | Counter in `state.json` + transcript scan recovers numbering |
 
 ---

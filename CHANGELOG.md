@@ -4,6 +4,18 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## ❓ [2026-09-10] Question Protocol: Token Efficiency (Delta + Inline + Importance)
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Q42-a: delta asks (new full-text once, carried opens collapse + `SHOW Qn`), inline options default, terse resolve echo, ≤60-char titles.
+  - Q43-a: `!` importance flags — `!` persists through skip + compaction, plain auto-parks (answerable, zero re-list), upgrade/resurrect/drop paths, plain-default.
+  - Validator grammar accepts optional `!` (QREF + REPLY_TOKEN); SKILL resolve step strips it before mapping; template + good fixture rewritten in new form.
+- **Quality & Verification Results**:
+  - `py_compile` green; good fixture passes (delta + `!` + multi-select), bad fixture still fails with same 5 violations; `--check` directives + gitignore green.
+
+---
+
 ## 📁 [2026-09-10] Q40-b: Source/`*_workspace/` Split for Handoff, Question, Tier
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

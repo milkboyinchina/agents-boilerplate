@@ -31,21 +31,22 @@ python3 question_protocol/init_questions.py --check
 
 If not initialized, run the bootstrap (or manually append the directive block from `init_questions.py` to `AGENTS.md` / `CLAUDE.md` / `.cursorrules` / `GEMINI.md`).
 
-### Step 2: Ask with labels
+### Step 2: Ask with labels (delta + inline + importance)
 
-Follow `templates/question_block.md`. Every choice — including yes/no — gets `Qn-a/b` labels. Re-list **Open** (skipped, original numbers, full text) + **New** (fresh numbers, full text). Max 4 open.
+Follow `templates/question_block.md`. Every choice — including yes/no — gets `Qn-a/b` labels, **inline** by default (`Q5. Retry? (a/backoff b/fixed-3 c/none)`; block layout only for long options). New questions full-text once; carried opens collapse to one line (`Q2. … → shown, SHOW Q2 for full text`). Mark importance at ask time: `Qn!` = must-answer, plain = answer-or-let-die. Titles ≤ ~60 chars. Max 4 open.
 
 ### Step 3: Resolve replies
 
-1. Normalize: lowercase, accept `: / . / =` separators, `,` / `+` multi-select.
-2. Map every `Qn` / `Qn-x` / `En-Qn-x` to its question text. Unknown label → ask for clarification, never drop custom text.
-3. Confirm: `Resolved: Q1-a (= ...), Q2: custom ..., Q3 skipped (still open).`
-4. Update `state.json` (`next_id`, open/closed).
+1. Normalize: lowercase, strip optional `!`, accept `: / . / =` separators, `,` / `+` multi-select.
+2. Map every `Qn[!]` / `Qn-x` / `En-Qn-x` to its question text. Unknown label → ask for clarification, never drop custom text.
+3. Confirm tersely: `Resolved: Q1-a, Q2-custom(120s), Q3!-open.` Full mapping only on ambiguity.
+4. Update `state.json` (`next_id`, open/closed). Plain skips auto-park (answerable, not re-listed, excluded from carry); `!` skips stay OPEN. Honor `Qn: drop` (kill), upgrades (`Qn! : …`), and resurrections by number.
+5. `SHOW Qn` → re-show that question full-text immediately.
 
 ### Step 4: Long sessions and compaction
 
 * At >99 closed questions, PROPOSE `Archive Q1-Q99 and re-baseline to Q1?` — only on approval. Archived refs become `E1-Q5`.
-* After compaction/resume: read `state.json` + handoff Open Questions + scan transcript for max `Qn`; `next_id = max(all)+1`; announce `Recovered at Qx (epoch En), y open carried over` and re-list open Qs.
+* After compaction/resume: read `state.json` + handoff Open Questions + scan transcript for max `Qn`; `next_id = max(all)+1`; announce `Recovered at Qx (epoch En), y open carried over` and re-list `!` opens in full (plain opens IDs-only).
 
 ---
 
@@ -54,5 +55,5 @@ Follow `templates/question_block.md`. Every choice — including yes/no — gets
 - [ ] Multi-question turns labeled `Q1, Q2...` monotonic per conversation.
 - [ ] All choice lists (binary included) labeled `Qn-a/b/c`.
 - [ ] Free-form (`: / . / =`), multi-select (`, / +`), and `skip Qn` all resolve.
-- [ ] Late answers by original number resolve; open list re-shown with full text.
+- [ ] Late answers by original number resolve; delta re-lists used; `!` persists, plain auto-parks.
 - [ ] `state.json` updated; re-baseline only on approval; recovery announced after compaction.

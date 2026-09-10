@@ -49,12 +49,12 @@ DIRECTIVE_BLOCK = """\n\
 6. **Compaction**: persist `question_workspace/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list open Qs.
 """.strip() + "\n"
 
-# Matches E2-Q12-a, Q3, q1-B, Q4: text, Q5. text, Q6= text, skip Q7
+# Matches E2-Q12-a, Q3, q1-B, Q4!, Q4: text, Q5. text, Q6= text, skip Q7
 QREF_RE = re.compile(
-    r"(?:(?P<epoch>[Ee]\d+)-)?[Qq](?P<num>\d+)(?:-(?P<opt>[A-Za-z]+))?"
+    r"(?:(?P<epoch>[Ee]\d+)-)?[Qq](?P<num>\d+)(?P<important>!)?(?:-(?P<opt>[A-Za-z]+))?"
 )
 REPLY_TOKEN_RE = re.compile(
-    r"^\s*(?:skip\s+)?(?:(?P<epoch>[Ee]\d+)-)?[Qq](?P<num>\d+)"
+    r"^\s*(?:skip\s+)?(?:(?P<epoch>[Ee]\d+)-)?[Qq](?P<num>\d+)(?P<important>!)?"
     r"(?:-(?P<opt>[A-Za-z]+(?:\s*[,+]\s*[A-Za-z]+)*))?"
     r"\s*(?::|\.|=)?\s*(?P<rest>.*)$"
 )

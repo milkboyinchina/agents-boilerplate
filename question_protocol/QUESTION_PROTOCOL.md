@@ -33,7 +33,11 @@ Without labels, multi-question turns force users to retype full sentences or quo
 
 * **Any** choice list gets labels — including binary ones (`yes/no`, `a/b`, `agree/disagree`, `proceed/cancel`).
 * Casing is **not enforced**: `Q1-a`, `Q1-A`, `q1-a` all mean the same. Agents MUST normalize to lowercase before resolving.
-* Example:
+* Default to **inline options** (one line, ~60% fewer tokens than block layout):
+```markdown
+Q1. Deploy now? (a/yes, deploy b/no, wait)
+```
+Block layout stays allowed for long or complex options:
 ```markdown
 Q1. Deploy now?
 - Q1-a) Yes, deploy
@@ -57,23 +61,39 @@ Agents MUST treat the text after the separator as a custom answer, never as an e
   * `Q2: skip` or `skip Q2`
 * A skipped question stays **OPEN** and remains answerable later by its original number (e.g. answering `Q2: ...` three turns later still resolves to the same question).
 
-### Rule 5 — Every ask re-lists Open + New with full text
+### Rule 5 — Delta asks (new full-text once, carried opens collapse)
 
-Each agent question turn MUST contain:
+New questions are asked full-text (inline options) exactly once. Carried opens
+collapse to one short line — the user already saw the full text:
 
 ```markdown
 **Open:**
-- Q2. Cache TTL? (skipped last turn)
-  - Q2-a) 60s  - Q2-b) 300s
+- Q2. Cache TTL? → shown last turn, reply SHOW Q2 for full text
 
 **New:**
-- Q5. Retry policy?
-  - Q5-a) Exponential backoff  - Q5-b) Fixed 3 retries
-  - Q5-c) No retries
+- Q5. Retry policy? (a/backoff b/fixed-3 c/none)
+- Q6! Deploy to prod tonight? (a/yes b/no)
 ```
 
+* Full text is mandatory on: first ask, post-compaction recovery, new session, changed options, or `SHOW Qn` request.
+* Question titles stay ≤ ~60 chars; detail lives in the first full ask, not in re-lists.
 * Max **4 open** questions at a time. If more accumulate, agent MUST ask which to park/close first.
 * User never answers from memory — always copy the visible `Qn` label.
+
+### Rule 6 — Importance flags (`!` = must-answer, plain = answer-or-let-die)
+
+The agent marks importance **at ask time**: `Q6!` must be answered; plain `Q2`
+may be answered or left to die.
+
+* **Skipped plain question** → auto-parked: stays answerable by number (numbers
+  never reuse, so `Q2: …` three turns later still resolves), but stops
+  re-listing and is excluded from compaction carry. Token cost after the ask: zero.
+* **Skipped `!` question** → full persistence: stays OPEN, delta re-listed,
+  carried through `state.json` + handoff + compaction recovery.
+* User controls the flag: `Q2! : keep asking me` upgrades to persistent,
+  citing a parked number resurrects it, `Q2: drop` kills it explicitly.
+* Unmarked defaults to plain: a wrongly-expired question costs a cheap re-ask,
+  a wrongly-persisted one costs N turns of re-list tax — fail toward cheap.
 
 ---
 
@@ -83,9 +103,9 @@ On receiving a reply, the agent MUST:
 
 1. Normalize each token: lowercase, accept `:` / `.` / `=` separators, accept `,` / `+` multi-select.
 2. Map every `Qn` / `Qn-x` back to its original question text. If a label is unknown, ask for clarification — never silently drop custom text.
-3. Confirm resolution briefly:
+3. Confirm resolution tersely (IDs + outcomes; full mapping only on ambiguity):
 ```markdown
-Resolved: Q1-a (= Yes, deploy), Q2: custom TTL 120s, Q3 skipped (still open).
+Resolved: Q1-a, Q2-custom(120s), Q3!-open.
 ```
 4. Update `question_workspace/state.json` (`next_id`, open/closed status).
 
@@ -134,6 +154,7 @@ Question state is file-backed so context summarization (`/compact`, `/clear` sum
 - [ ] `Qn:`, `Qn.`, `Qn=` free-form all resolve.
 - [ ] `skip Qn` / `Qn: skip` keeps the question open.
 - [ ] Late answer (`Q2` answered 3 turns later) resolves correctly.
-- [ ] Open + New re-listed with full text; max 4 open enforced.
+- [ ] Delta asks: new full-text once, carried opens collapsed; max 4 open enforced.
+- [ ] Importance flags: `!` persists through skip + compaction, plain auto-parks but stays answerable by number.
 - [ ] Re-baseline proposed at >99 closed, only on approval, old refs as `En-Qn`.
 - [ ] Counter recovers after compaction via `state.json` + transcript scan.

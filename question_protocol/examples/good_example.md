@@ -17,20 +17,21 @@ Q1-a, Q2: 120s custom, not in the list. Q3: skip
 
 Agent resolution:
 
-Resolved: Q1-a (= Yes, deploy), Q2: custom TTL 120s, Q3 skipped (still open).
+Resolved: Q1-a, Q2-custom(120s), Q3-open.
 
-Next turn (late answer + carryover):
+Next turn (delta + importance):
 
 **Open:**
-- Q3. Theme?
-  - Q3-a) Dark
-  - Q3-b) Light
+- Q3. Theme? → shown last turn, reply SHOW Q3 for full text
 
 **New:**
-- Q4. Retry policy?
-  - Q4-A) Exponential backoff
-  - Q4-b) Fixed 3 retries
+- Q4. Retry policy? (A/backoff b/fixed-3)
+- Q5! Deploy to prod tonight? (a/yes b/no)
 
 User reply:
 
-Q3-B, Q4-a+c
+Q3-B, Q4-a+c, Q5: skip
+
+Agent resolution:
+
+Resolved: Q3-B, Q4-a+c, Q5!-open.

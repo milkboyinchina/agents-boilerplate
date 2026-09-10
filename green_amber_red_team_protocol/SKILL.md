@@ -77,7 +77,7 @@ Write the standard local reference file documenting team personas, commands, and
 
 ### Step 6: Inject Directives into Master Rules
 
-Inspect which agent directive files exist in the project (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `GEMINI.md`) and append the standard teaming directives without duplicating existing entries.
+Inspect which agent directive files exist in the project (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `GEMINI.md`) and append the standard teaming directives without duplicating existing entries. If none exists, the bootstrap asks (Q1-a) to create `AGENTS.md` — same idempotency guarantees.
 
 ---
 

@@ -51,7 +51,7 @@ Run:
 python3 handoff_protocol/handoff.py start
 ```
 
-If an active handoff already exists, ask the user whether to run with `--force`.
+If an active handoff already exists, ask the user whether to run with `--force`. With no directive file present, `start` asks (Q1-a) to create `AGENTS.md`.
 
 The agent MUST:
 1. Answer the interactive prompts honestly.

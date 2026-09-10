@@ -157,8 +157,15 @@ def _read_text(path: Path) -> str:
 
 
 def _resolve_proto_dir(root: Path) -> Path:
+    # Reference flow first: the copy may live under agents-boilerplate/.
+    # Script location always wins (it IS a copy). Falls back to root-level.
     if root.name == PROTOCOL_DIR:
         return root
+    for candidate in (root / "agents-boilerplate" / PROTOCOL_DIR,
+                      Path(__file__).parent,
+                      root / PROTOCOL_DIR):
+        if candidate.exists():
+            return candidate
     return root / PROTOCOL_DIR
 
 
@@ -577,6 +584,29 @@ def detect_agent_files(root: Path) -> list[str]:
     return [n for n in AGENT_DIRECTIVE_FILES if (root / n).exists()]
 
 
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+    """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    target = root / "AGENTS.md"
+    if dry_run:
+        _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
+        return False
+    answer = "b"
+    if sys.stdin.isatty() and not quiet:
+        print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
+              "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
+        try:
+            answer = (input().strip().lower() or "a")
+        except EOFError:
+            answer = "b"
+    if answer not in ("a", "yes", "y"):
+        _log("[INFO] Skipped AGENTS.md creation — copy the block manually when ready.", quiet=quiet)
+        return False
+    target.write_text("# AGENTS.md\n\n" + DIRECTIVE_BLOCK, encoding="utf-8")
+    _log(f"[CREATE] {target} (protocol block installed)", quiet=quiet)
+    return True
+
+
 def inject_directives(root: Path, agent_files: list, *, dry_run: bool, quiet: bool, force: bool = False) -> list[str]:
     changed: list[str] = []
     for name in agent_files:
@@ -727,6 +757,8 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
         "cron_present": cron_present(root),
         "directives_ok": any(DIRECTIVE_BLOCK.strip() in _read_text(root / f).strip()
                              for f in detect_agent_files(root)),
+        "directives_hint": (None if detect_agent_files(root) else
+                            "No directive file found — run --install and answer Q1-a to create AGENTS.md."),
     }
     if json_output:
         print(json.dumps(result, indent=2))
@@ -864,7 +896,7 @@ def main(argv: list[str] | None = None) -> int:
         if agent_files:
             inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet, force=args.force)
         else:
-            _log("[INFO] No agent directive files detected; append the block manually.", quiet=args.quiet)
+            _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
         if not args.quiet:
             print("\n✅ Tier routing workspace is ready.")
             print("   Next: fill routing.yaml IDs via the add-tool workflow, then --validate.")

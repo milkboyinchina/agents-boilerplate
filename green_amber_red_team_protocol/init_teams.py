@@ -63,8 +63,18 @@ def _warn_dual_presence(root: Path) -> None:
               file=sys.stderr)
 
 
-def _packet_gitignore_lines() -> list[str]:
-    proto = _proto_dir_name()
+def _packet_gitignore_lines(root: Path | None = None) -> list[str]:
+    # Relative to the workspace root from the script's actual location, so the
+    # lines match under reference flow (agents-boilerplate/.../redteam/...) too.
+    # Callers without a root get the legacy name-only form (same result when the
+    # copy sits at root level).
+    if root is None:
+        proto = _proto_dir_name()
+    else:
+        try:
+            proto = str(Path(__file__).parent.resolve().relative_to(Path(root).resolve()))
+        except ValueError:
+            proto = _proto_dir_name()
     return [f"{proto}/redteam/inbox/*",
             f"{proto}/redteam/outbox/*",
             f"{proto}/redteam/inbox-archive/*",
@@ -243,7 +253,7 @@ def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool, side: str = "gre
         content = _read_text(gitignore)
 
     wanted = [GITIGNORE_LINE] if side == "green" else []
-    wanted += _packet_gitignore_lines()
+    wanted += _packet_gitignore_lines(root)
     if (root / "agents-boilerplate").exists():
         wanted.append("agents-boilerplate/")
     missing = [ln for ln in wanted if ln not in content.splitlines()]
@@ -327,6 +337,29 @@ def generate_readme(root: Path, *, force: bool, dry_run: bool, quiet: bool) -> b
 
 def detect_agent_files(root: Path) -> list[str]:
     return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
+
+
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+    """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    target = root / "AGENTS.md"
+    if dry_run:
+        _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
+        return False
+    answer = "b"
+    if sys.stdin.isatty() and not quiet:
+        print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
+              "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
+        try:
+            answer = (input().strip().lower() or "a")
+        except EOFError:
+            answer = "b"
+    if answer not in ("a", "yes", "y"):
+        _log("[INFO] Skipped AGENTS.md creation — copy the block manually when ready.", quiet=quiet)
+        return False
+    target.write_text("# AGENTS.md\n\n" + DIRECTIVE_BLOCK, encoding="utf-8")
+    _log(f"[CREATE] {target} (protocol block installed)", quiet=quiet)
+    return True
 
 
 def inject_directives(root: Path, agent_files: Iterable[str], *, dry_run: bool, quiet: bool) -> list[str]:
@@ -528,7 +561,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
     gitignore = root / ".gitignore"
     proto = _proto_dir(root)
     gi_lines = _read_text(gitignore).splitlines() if gitignore.exists() else []
-    packet_lines = _packet_gitignore_lines()
+    packet_lines = _packet_gitignore_lines(root)
 
     legacy = root / LEGACY_WORKSPACE_DIR
     if legacy.exists():
@@ -542,7 +575,8 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "dual_presence": str(_dual_presence(root)) if _dual_presence(root) else None,
         "legacy_workspace_found": legacy.exists(),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
-        "gitignore_ok": GITIGNORE_LINE in gi_lines,
+        # Red side correctly omits the plan-workspace line: expect it only on green.
+        "gitignore_ok": (GITIGNORE_LINE in gi_lines) if _read_config_side(proto) != "red" else True,
         "packet_gitignore_ok": all(ln in gi_lines for ln in packet_lines),
         "side": _read_config_side(proto),
         "redteam_skeleton_ok": all((proto / sub).exists() for sub in REDTEAM_SUBDIRS),
@@ -550,6 +584,8 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "plan_exists": plan_path.exists(),
         "ledger_exists": (workspace / LEDGER_NAME).exists(),
         "agent_files": detect_agent_files(root),
+        "directives_hint": (None if detect_agent_files(root) else
+                            "No directive file found — run init and answer Q1-a to create AGENTS.md."),
         "project_type": detect_project_type(root),
     }
 
@@ -655,11 +691,7 @@ def main(argv: list[str] | None = None) -> int:
     if agent_files:
         inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet)
     else:
-        _log(
-            "[INFO] No agent directive files detected (AGENTS.md, CLAUDE.md, .cursorrules, GEMINI.md). "
-            "Inject Traffic-Light protocols manually into your agent rules.",
-            quiet=args.quiet,
-        )
+        _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
 
     if args.init_plan:
         generate_plan(root, args.init_plan, args.template, dry_run=args.dry_run, quiet=args.quiet)

@@ -32,6 +32,46 @@ GITIGNORE_LINE = f"{WORKSPACE_DIR}/"
 # NOTE: repo-wide renames must EXCLUDE this line.
 LEGACY_WORKSPACE_DIR = "handoff_protocol"
 
+AGENT_DIRECTIVE_FILES = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".cursorrules",
+    "GEMINI.md",
+]
+
+DIRECTIVE_BLOCK = """\n\
+### 🔄 Session Handoff Protocol (`handoff_workspace/`)
+
+Manual triggers only: `/handoff-start` captures state (`handoff.py start`), `/handoff-resume` continues it (`handoff.py resume`), `done` archives. All files stay project-local and gitignored.
+""".strip() + "\n"
+
+
+def detect_agent_files(root: Path) -> list[str]:
+    return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
+
+
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+    """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    target = root / "AGENTS.md"
+    if dry_run:
+        _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
+        return False
+    answer = "b"
+    if sys.stdin.isatty() and not quiet:
+        print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
+              "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
+        try:
+            answer = (input().strip().lower() or "a")
+        except EOFError:
+            answer = "b"
+    if answer not in ("a", "yes", "y"):
+        _log("[INFO] Skipped AGENTS.md creation — copy the block manually when ready.", quiet=quiet)
+        return False
+    target.write_text("# AGENTS.md\n\n" + DIRECTIVE_BLOCK, encoding="utf-8")
+    _log(f"[CREATE] {target} (protocol block installed)", quiet=quiet)
+    return True
+
 
 def _is_legacy_workspace(root: Path) -> bool:
     # The boilerplate copy shares the legacy name — only treat it as a legacy
@@ -300,7 +340,9 @@ def start_handoff(args: argparse.Namespace, root: Path) -> int:
 
     if not args.quiet and not args.dry_run:
         print(f"\n✅ Handoff started: {output}")
-        print("   Resume later with: python3 handoff_protocol/handoff.py resume")
+        rel = Path(__file__).resolve().relative_to(root.resolve()) \
+            if root.resolve() in Path(__file__).resolve().parents else Path("handoff_protocol/handoff.py")
+        print(f"   Resume later with: python3 {rel.as_posix()} resume")
     return 0
 
 
@@ -398,6 +440,8 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
         "active_handoff": str(active) if active else None,
         "archived_count": len(archived),
         "latest_archived": str(archived[-1]) if archived else None,
+        "directives_hint": (None if detect_agent_files(root) else
+                            "No directive file found — run start and answer Q1-a to create AGENTS.md."),
     }
 
     if args.json:
@@ -449,6 +493,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "start":
         _warn_dual_presence(root)
         _warn_legacy(root)
+        if not detect_agent_files(root):
+            _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
         return start_handoff(args, root)
     if args.command == "resume":
         return resume_handoff(args, root)

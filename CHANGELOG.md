@@ -4,6 +4,17 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-10] Q46-a: Ask-to-Create AGENTS.md in All Four Inits
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - All four inits ask `Q1. Create AGENTS.md with the protocol block? (a/yes b/no)` when no directive file exists (default yes, Q49-a); non-TTY/CI never blocks (INFO + skip); handoff gains its first directive block + detect helper; `--check` gains `directives_hint` everywhere.
+  - SKILL files note the Q1-a creation step.
+- **Quality & Verification Results**:
+  - `py_compile` ×4; pty Q1-a creates + `--check` green; piped stdin skips without hanging; dry-run reports intent; existing-file behavior unchanged (SKIP/append); handoff Q1-a end-to-end (AGENTS.md + workspace + handoff file).
+
+---
+
 ## 📝 [2026-09-10] Q47-a Enforcement: Reference-Flow READMEs + Dual-Presence Detection
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

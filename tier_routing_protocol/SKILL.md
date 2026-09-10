@@ -11,6 +11,10 @@ Tasks declare tiers. Only `routing.yaml` `aliases:` holds raw model IDs. Never i
 
 ## 🛠️ Autonomous Execution Steps
 
+### Step 0: Install (once per workspace)
+
+`python3 tier_routing_protocol/resolve_model.py --install` (with no directive file present, it asks Q1-a to create `AGENTS.md`).
+
 ### Step 1: Assign (Green Team plans, Amber Team resolves)
 
 Green Team stamps Tier per task-row (`templates/plan_tier_row.md`). Before executing, Amber resolves:

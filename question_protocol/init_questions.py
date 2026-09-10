@@ -80,9 +80,15 @@ def _read_text(path: Path) -> str:
 
 
 def _resolve_protocol_dir(root: Path) -> Path:
-    # Works whether cwd is the project root or inside question_protocol/.
+    # Works whether cwd is the project root, inside question_protocol/, or under
+    # reference flow (agents-boilerplate/question_protocol/). Script location wins.
     if root.name == PROTOCOL_DIR:
         return root
+    for candidate in (root / PROTOCOL_DIR,
+                      root / "agents-boilerplate" / PROTOCOL_DIR,
+                      Path(__file__).parent):
+        if candidate.exists():
+            return candidate
     return root / PROTOCOL_DIR
 
 
@@ -147,6 +153,29 @@ def _read_state(root: Path) -> dict:
 
 def detect_agent_files(root: Path) -> list[str]:
     return [name for name in AGENT_DIRECTIVE_FILES if (root / name).exists()]
+
+
+def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool) -> bool:
+    """Q46-a: no directive file exists — ask (default yes) to create AGENTS.md.
+    Non-interactive stdin (piped/CI) never blocks: falls back to INFO + skip."""
+    target = root / "AGENTS.md"
+    if dry_run:
+        _log(f"[DRY-RUN] Would ask to create {target} with the protocol block", quiet=quiet)
+        return False
+    answer = "b"
+    if sys.stdin.isatty() and not quiet:
+        print("Q1. No directive file found (AGENTS.md/CLAUDE.md/.cursorrules/GEMINI.md). "
+              "Create AGENTS.md with the protocol block? (a/yes b/no, I'll copy manually) [a]: ")
+        try:
+            answer = (input().strip().lower() or "a")
+        except EOFError:
+            answer = "b"
+    if answer not in ("a", "yes", "y"):
+        _log("[INFO] Skipped AGENTS.md creation — copy the block manually when ready.", quiet=quiet)
+        return False
+    target.write_text("# AGENTS.md\n\n" + DIRECTIVE_BLOCK, encoding="utf-8")
+    _log(f"[CREATE] {target} (protocol block installed)", quiet=quiet)
+    return True
 
 
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
@@ -282,6 +311,8 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "open_count": len(state.get("open", [])) if isinstance(state.get("open"), list) else None,
         "gitignore_ok": f"{WORKSPACE_DIR}/{STATE_NAME}" in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
         "directives_ok": directives_ok,
+        "directives_hint": (None if agent_files else
+                            "No directive file found — run init and answer Q1-a to create AGENTS.md."),
         "agent_files": agent_files,
         "rebaseline_threshold": REBASELINE_THRESHOLD,
     }
@@ -340,11 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     if agent_files:
         inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet, force=args.force)
     else:
-        _log(
-            "[INFO] No agent directive files detected (AGENTS.md, CLAUDE.md, .cursorrules, GEMINI.md). "
-            "Append the directive block from init_questions.py manually.",
-            quiet=args.quiet,
-        )
+        _maybe_create_directives(root, dry_run=args.dry_run, quiet=args.quiet)
 
     if not args.quiet:
         proto = _resolve_protocol_dir(root)

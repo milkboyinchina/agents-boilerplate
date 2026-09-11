@@ -4,6 +4,22 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-11] Upgrade Lifecycle: Versions + Backup/Restore + Uninstall (Q60-a/Q61-a)
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - Independent versions: all four CLIs `1.1.0` → `1.2.0` (separate counters from here); init stamps `PROTOCOL_KEY=version` into merged `.protocol/versions.json`; `--check` reports `code_version` / `installed_version` / `version_ok` (staleness without file diffs).
+  - `--backup` (+ handoff `backup` subcommand): root-level `protocol-backup-<key>-<ts>.tar.gz` with `manifest.json` (key, version, paths, directive files, gitignore state).
+  - `--restore <bundle> [--force]` (+ handoff `restore`): merge by default, overwrite with `--force`; tar `filter="data"` with legacy fallback; re-ensures gitignore + directives + version stamp.
+  - `--uninstall [--skip-backup]` (+ handoff `uninstall`; tier adds `--keep-cron`): archive-first — backup bundle, drop runtime dirs, extract directive blocks (files never deleted), drop versions key; shared `.protocol/` gitignore line pruned only when `.protocol/` ends up empty (empty `.gitignore` removed too). Re-run is a no-op. Tier uninstall also removes the cron scheduler when present.
+  - Docs: CLI tables ×4, root Quick Start upgrade flow (version check → backup → refresh → re-run) + uninstall section.
+  - Version-marked directive blocks (`<!-- protocol-block:<key> vX -->`): upgrades REPLACE same-key stale blocks (announced with old version) instead of accumulating; manual pastes recognized via unmarked core; uninstall removes any version; `--check` accepts all forms. One-time manual cleanup for pre-1.2.0 unmarked blocks (documented in migration note).
+- **Quality & Verification Results**:
+  - Sandbox matrix: fresh install stamps + `version_ok`; backup → uninstall → restore round-trips per CLI; shared-line prune timing (survives until last protocol leaves); `--skip-backup` destroys with loud warning; uninstall re-run no-op; question restore of empty workspace accurate (`state_exists: false`); marker drill (stale v0.0.1 → replaced, old gone, re-run SKIP).
+  - Field test (`android_app_auto_tester`, live PLANNED plan): safety tarball, collection re-copy, 4 re-runs migrated everything (plan + defects byte-identical via md5), all checks green, root reduced to collection + `.protocol/`; 4 legacy blocks removed manually once, re-runs SKIP-clean; validation handoff archived; results logged to its `IMPLEMENTATION_LOG.md`.
+
+---
+
 ## 📝 [2026-09-11] `.protocol/` Consolidation (Q58-a/Q59-a) — All Runtime Under One Hidden Dir
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

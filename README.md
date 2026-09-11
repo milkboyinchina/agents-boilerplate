@@ -61,16 +61,39 @@ Deviations are one clause: *"standard profile, but seed the plan 'Auth API' with
 Upgrades are boring on purpose — everything is idempotent:
 
 ```bash
-# 1. Refresh the collection (pull, re-copy, or re-download over the old one)
+# 0. Check whether you're stale (each protocol versions itself independently)
+python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py --check
+# code_version vs installed_version: mismatch means the collection moved on
+
+# 1. Snapshot first (one bundle per protocol; the manifest records versions)
+python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py --backup
+python3 agents-boilerplate/handoff_protocol/handoff.py backup
+# ... and so on per installed protocol
+
+# 2. Refresh the collection (pull, re-copy, or re-download over the old one)
 git -C agents-boilerplate pull   # or: cp -r /fresh/agents-boilerplate ./agents-boilerplate
 
-# 2. Re-run the inits you already ran — same commands, same flags
+# 3. Re-run the inits you already ran — same commands, same flags
 python3 agents-boilerplate/green_amber_red_team_protocol/init_teams.py
 python3 agents-boilerplate/question_protocol/init_questions.py
 # ... and so on per installed protocol
 ```
 
-What survives: plans, ledgers, handoffs, pins, counters, packet archives, and `AGENTS.md` blocks (re-runs print `[SKIP]`/`[OK]`, never duplicate or overwrite — except `--force`, which you asked for). What changes: CLI behavior, templates, and directive wording pick up the new version. If a release renames paths, its `CHANGELOG.md` entry carries the exact migration commands — follow that entry, then re-run the inits.
+What survives: plans, ledgers, handoffs, pins, counters, packet archives, and `AGENTS.md` blocks (re-runs print `[SKIP]`/`[OK]`, never duplicate or overwrite — except `--force`, which you asked for). Stale directive blocks from older versions are auto-replaced in place (version markers; announced with the old version). What changes: CLI behavior, templates, and directive wording pick up the new version. If a release renames paths, its `CHANGELOG.md` entry carries the exact migration commands — follow that entry, then re-run the inits. One exception: pre-1.2.0 unmarked blocks can't be auto-matched — delete those once manually (the 1.2.0 changelog entry says which).
+
+### Uninstall (leaving? read this)
+
+Removal is archive-first — data is never silently destroyed:
+
+```bash
+python3 agents-boilerplate/question_protocol/init_questions.py --uninstall
+# → backup bundle (protocol-backup-question-<ts>.tar.gz), runtime dropped,
+#   directives extracted, version key removed. Delete the bundle to finish.
+# --skip-backup destroys without archiving (explicit only).
+# --restore <bundle> brings it back (merge; --force overwrites).
+```
+
+The shared `.protocol/` gitignore line is pruned only when the last protocol leaves. Re-running `--uninstall` is a no-op.
 
 ---
 

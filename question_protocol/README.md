@@ -91,6 +91,9 @@ python3 question_protocol/init_questions.py --validate <file>
 | `--check` | Report whether the workspace is already initialized. |
 | `--json` | Output `--check` / `status` results as JSON. |
 | `--validate <file>` | Lint a transcript for Q-label compliance (exit 1 on violations). |
+| `--backup` | Snapshot runtime + manifest into a root-level tar.gz bundle. |
+| `--restore <bundle>` | Restore from a bundle (merge; `--force` overwrites). |
+| `--uninstall [--skip-backup]` | Archive-first removal (backup, drop runtime, extract directives). |
 | `--quiet` | Suppress non-essential output. |
 
 `status` is reported via `--check`: `directives_ok`, `state.json` presence, `next_id`, `epoch`, open count.

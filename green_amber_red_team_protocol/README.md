@@ -144,6 +144,9 @@ python3 green_amber_red_team_protocol/init_teams.py [OPTIONS]
 | `--template {generic,backend,frontend,mobile,devops}` | Plan template to use (default: generic). |
 | `--quiet` | Suppress non-essential output. |
 | `--side {green,red}` | Workspace side (default: keep existing, else green). Red skips the plan workspace. |
+| `--backup` | Snapshot runtime + manifest into a root-level tar.gz bundle. |
+| `--restore <bundle>` | Restore from a bundle (merge; `--force` overwrites). |
+| `--uninstall [--skip-backup]` | Archive-first removal (backup, drop runtime, extract directives). |
 
 ---
 

@@ -91,6 +91,9 @@ Or tell your agent:
 | `--install [--dry-run] [--force]` | Bootstrap: gitignore + directives. |
 | `--install-cron` / `--uninstall-cron` | OS-aware weekly scheduler setup/removal. |
 | `--check [--json]` | Registry, pins, gitignore, cron, directives status. |
+| `--backup` | Snapshot runtime + manifest into a root-level tar.gz bundle. |
+| `--restore <bundle>` | Restore from a bundle (merge; `--force` overwrites). |
+| `--uninstall [--skip-backup] [--keep-cron]` | Archive-first removal (backup, drop runtime + cron, extract directives). |
 | `--validate [--fail-on-stale]` | Structure + placeholder + staleness gate. |
 
 Env: `MODEL_ROUTE_OVERRIDE` (`T1/T2/T3` or alias) sits between flags and pins.

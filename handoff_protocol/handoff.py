@@ -14,15 +14,20 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import io
 import json
 import re
 import shutil
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
+
+# Stable key for versions.json + backup bundles.
+PROTOCOL_KEY = "handoff"
 
 RUNTIME_ROOT = ".protocol"  # all runtime state lives here (single .gitignore line)
 WORKSPACE_LEAF = "handoff_workspace"  # pre-consolidation name: legacy detect + migrate
@@ -42,11 +47,43 @@ AGENT_DIRECTIVE_FILES = [
     "GEMINI.md",
 ]
 
-DIRECTIVE_BLOCK = """\n\
-### 🔄 Session Handoff Protocol (`.protocol/handoff_workspace/`)
+# Version marker wrapper: upgrades REPLACE same-key stale blocks instead of
+# accumulating them. Manual pastes (unmarked core) are recognized and left alone.
+_DIRECTIVE_CORE = """### 🔄 Session Handoff Protocol (`.protocol/handoff_workspace/`)
 
 Manual triggers only: `/handoff-start` captures state (`handoff.py start`), `/handoff-resume` continues it (`handoff.py resume`), `done` archives. All files stay project-local and gitignored.
-""".strip() + "\n"
+"""
+
+DIRECTIVE_BLOCK = (f"\n<!-- protocol-block:{PROTOCOL_KEY} v{__version__} -->\n"
+                   f"{_DIRECTIVE_CORE}"
+                   f"<!-- /protocol-block:{PROTOCOL_KEY} -->\n")
+
+
+def _block_pattern() -> re.Pattern:
+    return re.compile(rf"<!-- protocol-block:{re.escape(PROTOCOL_KEY)} v(.*?) -->"
+                      r".*?"
+                      rf"<!-- /protocol-block:{re.escape(PROTOCOL_KEY)} -->",
+                      re.DOTALL)
+
+
+def _has_block(text: str) -> bool:
+    """Current marked block, manual-paste core, or any stale marked version."""
+    stripped = text.strip()
+    return (DIRECTIVE_BLOCK.strip() in stripped
+            or _DIRECTIVE_CORE.strip() in stripped
+            or _block_pattern().search(text) is not None)
+
+
+def _replace_stale_block(text: str) -> tuple[str, str | None]:
+    """Swap a same-protocol older-versioned block for the current one.
+    Returns (new_text, old_version). No markers → (text, None)."""
+    pattern = _block_pattern()
+    match = pattern.search(text)
+    if not match:
+        return text, None
+    if DIRECTIVE_BLOCK.strip() in text.strip():
+        return text, None  # current version already present
+    return pattern.sub(lambda _: DIRECTIVE_BLOCK.strip(), text, count=1), match.group(1)
 
 
 def detect_agent_files(root: Path) -> list[str]:
@@ -60,6 +97,19 @@ def inject_directives(root: Path, agent_files: list[str], *, dry_run: bool, quie
         existing = _read_text(path)
         if DIRECTIVE_BLOCK.strip() in existing.strip():
             _log(f"[SKIP] {name} already contains Handoff directives", quiet=quiet)
+            continue
+        replaced, old_version = _replace_stale_block(existing)
+        if old_version is not None:
+            if dry_run:
+                _log(f"[DRY-RUN] Would replace stale v{old_version} directives in {name}", quiet=quiet)
+                changed.append(name)
+                continue
+            path.write_text(replaced.rstrip("\n") + "\n", encoding="utf-8")
+            _log(f"[UPDATE] {name} (replaced stale v{old_version} directives)", quiet=quiet)
+            changed.append(name)
+            continue
+        if _DIRECTIVE_CORE.strip() in existing.strip():
+            _log(f"[SKIP] {name} already contains Handoff directives (manual paste)", quiet=quiet)
             continue
         if dry_run:
             _log(f"[DRY-RUN] Would append directives to {name}", quiet=quiet)
@@ -467,6 +517,196 @@ def done_handoff(args: argparse.Namespace, root: Path) -> int:
     return 0
 
 
+VERSIONS_NAME = "versions.json"
+BACKUP_PREFIX = "protocol-backup"
+
+
+def _versions_path(root: Path) -> Path:
+    return root / RUNTIME_ROOT / VERSIONS_NAME
+
+
+def read_versions(root: Path) -> dict:
+    try:
+        data = json.loads(_read_text(_versions_path(root)))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def stamp_version(root: Path, *, dry_run: bool, quiet: bool) -> None:
+    """Record this protocol's code version in .protocol/versions.json (merged —
+    other protocols' keys are never touched)."""
+    if dry_run:
+        _log(f"[DRY-RUN] Would stamp {PROTOCOL_KEY}={__version__} in {_versions_path(root)}",
+             quiet=quiet)
+        return
+    _versions_path(root).parent.mkdir(parents=True, exist_ok=True)
+    versions = read_versions(root)
+    if versions.get(PROTOCOL_KEY) == __version__:
+        _log(f"[OK] version already stamped ({PROTOCOL_KEY}={__version__})", quiet=quiet)
+        return
+    versions[PROTOCOL_KEY] = __version__
+    _versions_path(root).write_text(json.dumps(versions, indent=2) + "\n", encoding="utf-8")
+    _log(f"[STAMP] {PROTOCOL_KEY}={__version__} in {_versions_path(root)}", quiet=quiet)
+
+
+def _runtime_dirs(root: Path) -> list[Path]:
+    return [root / WORKSPACE_DIR]
+
+
+def _backup_name() -> str:
+    return f"{BACKUP_PREFIX}-{PROTOCOL_KEY}-{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.tar.gz"
+
+
+def backup_runtime(root: Path, *, dry_run: bool, quiet: bool) -> Path | None:
+    """Snapshot runtime dirs + a manifest into a root-level tar.gz bundle."""
+    existing = [d for d in _runtime_dirs(root) if d.exists()]
+    agent_files = detect_agent_files(root)
+    with_block = [f for f in agent_files if _has_block(_read_text(root / f))]
+    gi_lines = _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else []
+    manifest = {
+        "protocol": PROTOCOL_KEY,
+        "version": __version__,
+        "created": datetime.datetime.now().isoformat(timespec="seconds"),
+        "paths": sorted(str(d.relative_to(root)) for d in existing),
+        "directive_files": with_block,
+        "gitignore_had_protocol_line": GITIGNORE_LINE in gi_lines,
+    }
+    target = root / _backup_name()
+    if dry_run:
+        _log(f"[DRY-RUN] Would write backup {target} "
+             f"({len(existing)} dir(s), {len(with_block)} directive file(s))", quiet=quiet)
+        return target
+    if not existing:
+        _log("[INFO] No runtime dirs to back up (manifest-only bundle).", quiet=quiet)
+    with tarfile.open(target, "w:gz") as tar:
+        data = json.dumps(manifest, indent=2).encode("utf-8")
+        info = tarfile.TarInfo("manifest.json")
+        info.size = len(data)
+        tar.addfile(info, io.BytesIO(data))
+        for d in existing:
+            tar.add(str(d.relative_to(root)), arcname=str(d.relative_to(root)))
+    _log(f"[BACKUP] {target} ({', '.join(manifest['paths']) or 'manifest only'})", quiet=quiet)
+    return target
+
+
+def _extract_member(tar: tarfile.TarFile, member: tarfile.TarInfo, path: Path) -> None:
+    try:
+        tar.extract(member, path=path, filter="data")
+    except TypeError:  # Python < 3.12 without backport
+        tar.extract(member, path=path)
+
+
+def restore_bundle(root: Path, bundle: str, *, force: bool, dry_run: bool, quiet: bool) -> int:
+    """Restore files from a backup bundle (merge; --force overwrites)."""
+    path = Path(bundle)
+    if not path.exists():
+        print(f"[ERROR] backup bundle not found: {path}")
+        return 1
+    with tarfile.open(path, "r:gz") as tar:
+        members = [m for m in tar.getmembers() if m.name != "manifest.json"]
+        if dry_run:
+            for m in members:
+                dest = root / m.name
+                action = "overwrite" if (dest.exists() and force) else ("keep" if dest.exists() else "restore")
+                _log(f"[DRY-RUN] Would {action}: {dest}", quiet=quiet)
+            return 0
+        kept, restored, overwritten = 0, 0, 0
+        for m in members:
+            dest = root / m.name
+            existed = dest.exists()
+            if existed and not force:
+                kept += 1
+                continue
+            _extract_member(tar, m, root)
+            if existed:
+                overwritten += 1
+            else:
+                restored += 1
+    _log(f"[RESTORE] {path}: {restored} restored, {overwritten} overwritten, {kept} kept.",
+         quiet=quiet)
+    ensure_gitignore(root, dry_run=False, quiet=quiet)
+    for name in detect_agent_files(root):
+        inject_directives(root, [name], dry_run=False, quiet=quiet)
+    stamp_version(root, dry_run=False, quiet=quiet)
+    return 0
+
+
+def remove_directives(root: Path, *, dry_run: bool, quiet: bool) -> list[str]:
+    """Extract this protocol's directive block (any version) from agent files.
+    Never deletes files."""
+    pattern = _block_pattern()
+    changed = []
+    for name in detect_agent_files(root):
+        path = root / name
+        text = _read_text(path)
+        if DIRECTIVE_BLOCK.strip() not in text.strip() and not pattern.search(text):
+            continue
+        if dry_run:
+            _log(f"[DRY-RUN] Would remove directives from {name}", quiet=quiet)
+            changed.append(name)
+            continue
+        new_text = pattern.sub("\n", text)
+        new_text = new_text.replace(DIRECTIVE_BLOCK, "\n")
+        new_text = re.sub(r"\n{3,}", "\n\n", new_text).strip() + "\n"
+        path.write_text(new_text, encoding="utf-8")
+        _log(f"[REMOVE] directives from {name}", quiet=quiet)
+        changed.append(name)
+    return changed
+
+
+def uninstall_protocol(root: Path, *, skip_backup: bool, dry_run: bool, quiet: bool) -> int:
+    """Archive-first removal: backup bundle, drop runtime dirs, extract directives,
+    drop own versions key. The `.protocol/` gitignore line is pruned only when
+    `.protocol/` ends up empty. Re-run is a no-op (exit 0)."""
+    installed = (any(d.exists() for d in _runtime_dirs(root))
+                 or remove_directives(root, dry_run=True, quiet=True)
+                 or PROTOCOL_KEY in read_versions(root))
+    if not installed:
+        _log(f"[OK] {PROTOCOL_KEY} not installed — nothing to remove.", quiet=quiet)
+        return 0
+    bundle = None
+    if not skip_backup:
+        bundle = backup_runtime(root, dry_run=dry_run, quiet=quiet)
+    elif dry_run:
+        _log("[DRY-RUN] Would skip backup (--skip-backup)", quiet=quiet)
+    else:
+        _log("[WARN] --skip-backup: runtime data will be destroyed without an archive.", quiet=quiet)
+    for d in _runtime_dirs(root):
+        if d.exists():
+            if dry_run:
+                _log(f"[DRY-RUN] Would remove {d}", quiet=quiet)
+            else:
+                shutil.rmtree(d)
+                _log(f"[REMOVE] {d}", quiet=quiet)
+    remove_directives(root, dry_run=dry_run, quiet=quiet)
+    if not dry_run:
+        versions = read_versions(root)
+        versions.pop(PROTOCOL_KEY, None)
+        if versions:
+            _versions_path(root).write_text(json.dumps(versions, indent=2) + "\n", encoding="utf-8")
+        elif _versions_path(root).exists():
+            _versions_path(root).unlink()
+        runtime_root = root / RUNTIME_ROOT
+        if runtime_root.exists() and not any(runtime_root.iterdir()):
+            runtime_root.rmdir()
+            _log(f"[REMOVE] empty {runtime_root}", quiet=quiet)
+        gi = root / ".gitignore"
+        lines = _read_text(gi).splitlines() if gi.exists() else []
+        if GITIGNORE_LINE in lines and not (root / RUNTIME_ROOT).exists():
+            remaining = [ln for ln in lines if ln != GITIGNORE_LINE]
+            if "".join(remaining).strip():
+                gi.write_text("\n".join(remaining).rstrip("\n") + "\n", encoding="utf-8")
+            else:
+                gi.unlink()
+                _log(f"[REMOVE] {gi} (only held the .protocol/ line)", quiet=quiet)
+            _log(f"[PRUNE] {GITIGNORE_LINE!r} (.protocol/ gone)", quiet=quiet)
+    if bundle is not None and not dry_run:
+        _log(f"[ARCHIVE] runtime preserved in {bundle} — delete it to complete the uninstall.",
+             quiet=quiet)
+    return 0
+
+
 def status_handoff(args: argparse.Namespace, root: Path) -> int:
     _warn_legacy(root)
     pre = root / WORKSPACE_LEAF
@@ -484,9 +724,12 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
         "dual_presence": str(dup) if dup else None,
         "legacy_workspace_found": _is_legacy_workspace(root),
         "pre_consolidation_runtime_found": (root / WORKSPACE_LEAF).exists(),
+        "code_version": __version__,
+        "installed_version": read_versions(root).get(PROTOCOL_KEY),
+        "version_ok": read_versions(root).get(PROTOCOL_KEY) == __version__,
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
         "gitignore_ok": GITIGNORE_LINE in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
-        "directives_ok": any(DIRECTIVE_BLOCK.strip() in _read_text(root / f).strip()
+        "directives_ok": any(_has_block(_read_text(root / f))
                              for f in detect_agent_files(root)),
         "active_handoff": str(active) if active else None,
         "archived_count": len(archived),
@@ -537,6 +780,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     status_parser = subparsers.add_parser("status", help="Report handoff workspace status.")
     status_parser.add_argument("--json", action="store_true", help="Output as JSON.")
 
+    subparsers.add_parser("backup", help="Snapshot runtime + manifest into a root-level tar.gz bundle.")
+    restore_parser = subparsers.add_parser("restore", help="Restore files from a backup bundle (merge; --force overwrites).")
+    restore_parser.add_argument("bundle", help="Path to a protocol-backup-handoff-*.tar.gz bundle.")
+    restore_parser.add_argument("--force", action="store_true", help="Overwrite existing files.")
+    uninstall_parser = subparsers.add_parser("uninstall", help="Archive-first removal: backup bundle, drop runtime, extract directives.")
+    uninstall_parser.add_argument("--skip-backup", action="store_true",
+                                  help="Destroy runtime without archiving (explicit data loss).")
+
     return parser.parse_args(argv)
 
 
@@ -544,10 +795,20 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     root = Path.cwd()
 
+    if args.command == "backup":
+        backup_runtime(root, dry_run=args.dry_run, quiet=args.quiet)
+        return 0
+    if args.command == "restore":
+        return restore_bundle(root, args.bundle, force=args.force, dry_run=args.dry_run,
+                              quiet=args.quiet)
+    if args.command == "uninstall":
+        return uninstall_protocol(root, skip_backup=args.skip_backup, dry_run=args.dry_run,
+                                  quiet=args.quiet)
     if args.command == "start":
         _warn_dual_presence(root)
         _warn_legacy(root)
         migrate_legacy_runtime(root, dry_run=args.dry_run, quiet=args.quiet)
+        stamp_version(root, dry_run=args.dry_run, quiet=args.quiet)
         agent_files = detect_agent_files(root)
         if agent_files:
             inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet)

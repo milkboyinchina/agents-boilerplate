@@ -5,7 +5,7 @@ Tracked future work for this collection. Newest first. Checked items move to `CH
 ## Tackle order (locked sequence — check off top-down; Q67-a)
 
 - [x] 1. `.protocol/` consolidation (Q58-a + Q59-a locked — all runtime incl. redteam exchange under `.protocol/`, single gitignore line; test workspace is the migration field test)
-- [ ] 2. Upgrade lifecycle (independent per-protocol versions + init stamp/report, README upgrade docs, `--backup`/`--restore` bundle format, `--uninstall` reusing it — Q60/Q61 resurface at build)
+- [x] 2. Upgrade lifecycle (independent per-protocol versions + init stamp/report, README upgrade docs, `--backup`/`--restore` bundle format, `--uninstall` reusing it — Q60-a/Q61-a)
 - [ ] 3. `agent_builder_protocol/` (base for all workspaces, built on frozen paths/blocks)
 - [ ] 4. `architect_protocol/`
 - [ ] 5. `memory_protocol/`

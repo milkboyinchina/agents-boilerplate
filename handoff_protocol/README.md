@@ -76,6 +76,9 @@ python3 handoff_protocol/handoff.py [OPTIONS] <COMMAND>
 | `resume` | Print a resume summary from the active handoff. |
 | `done` | Move the active handoff to `.protocol/handoff_workspace/archive/`. |
 | `status` | Show whether an active handoff exists. |
+| `backup` | Snapshot runtime + manifest into a root-level tar.gz bundle. |
+| `restore <bundle> [--force]` | Restore from a bundle (merge; `--force` overwrites). |
+| `uninstall [--skip-backup]` | Archive-first removal (backup, drop runtime, extract directives). |
 
 | Option | Description |
 |---|---|

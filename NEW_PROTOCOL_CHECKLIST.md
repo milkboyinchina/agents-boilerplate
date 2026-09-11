@@ -28,7 +28,7 @@ Follow this checklist when adding a boilerplate to this collection. It encodes t
 
 ## 4. Runtime hygiene
 
-- [ ] Bootstrap CLI gitignores its runtime files at init (idempotent); source stays committed.
+- [ ] Runtime lives under `.protocol/` (single gitignore line, ensured + stale-pruned at init, idempotent); source stays committed.
 - [ ] Exchange/packet contents (diffs, binaries, reports) are gitignored per-directory-contents (`<dir>/*`), never whole-folder when the folder also holds tracked templates/config.
 - [ ] `--check` reports gitignore status; cron/scheduler presence where applicable.
 - [ ] No raw secrets, no model IDs, no machine-specific paths in committed files.

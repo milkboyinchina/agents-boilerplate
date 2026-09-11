@@ -1,4 +1,4 @@
-# Tier column snippet for green_amber_red_workspace/plan.md task tables
+# Tier column snippet for .protocol/green_amber_red_workspace/plan.md task tables
 
 Add a `Tier` column (stamped by Green Team) and a `Model (resolved)` column
 (filled by Amber Team after running resolve_model.py):

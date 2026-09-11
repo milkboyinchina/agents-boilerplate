@@ -27,6 +27,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -34,7 +35,9 @@ from pathlib import Path
 __version__ = "1.1.0"
 
 PROTOCOL_DIR = "tier_routing_protocol"
-WORKSPACE_DIR = "tier_routing_workspace"
+RUNTIME_ROOT = ".protocol"  # all runtime state lives here (single .gitignore line)
+WORKSPACE_LEAF = "tier_routing_workspace"  # pre-consolidation name: legacy detect + migrate
+WORKSPACE_DIR = f"{RUNTIME_ROOT}/{WORKSPACE_LEAF}"
 REGISTRY_NAME = "routing.yaml"
 STATE_NAME = "routing_state.json"
 HEARTBEAT_NAME = "heartbeat.json"
@@ -65,7 +68,7 @@ DIRECTIVE_BLOCK = """\n\
 2. **Resolve at runtime**: `python3 tier_routing_protocol/resolve_model.py --tier <T> --tool <name> --task <id>`. Raw IDs live only in `routing.yaml` `aliases:`.
 3. **Precedence (later wins, always logged)**: tier default → `--force-tier` → `MODEL_ROUTE_OVERRIDE` → task pin (`/pin-model <alias>`, auto-releases on `[COMPLETED]`, `/unpin` releases early). No session pin exists.
 4. **Failover, never hard-fail**: dead IDs fall down `fallbacks:` chains with a loud warning.
-5. **Freshness**: weekly dumb cron writes `tier_routing_workspace/heartbeat.json` (sole cron output, gitignored); drift triggers a pending proposal + `Q1-a` approval turn. Stale heartbeat (>10d) = unknown, check live.
+5. **Freshness**: weekly dumb cron writes `.protocol/tier_routing_workspace/heartbeat.json` (sole cron output, gitignored); drift triggers a pending proposal + `Q1-a` approval turn. Stale heartbeat (>10d) = unknown, check live.
 """.strip() + "\n"
 
 
@@ -557,7 +560,8 @@ def run_refresh(root: Path, *, dry_run: bool, quiet: bool, registry_path: str | 
 # Bootstrap: gitignore, directives, scheduler install
 # ---------------------------------------------------------------------------
 
-RUNTIME_GITIGNORE_LINES = [f"{WORKSPACE_DIR}/{HEARTBEAT_NAME}", f"{WORKSPACE_DIR}/{STATE_NAME}"]
+RUNTIME_GITIGNORE_LINES = [f"{RUNTIME_ROOT}/"]
+STALE_GITIGNORE_LINES = [f"{WORKSPACE_LEAF}/{HEARTBEAT_NAME}", f"{WORKSPACE_LEAF}/{STATE_NAME}"]
 
 
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
@@ -566,18 +570,40 @@ def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
     wanted = list(RUNTIME_GITIGNORE_LINES)
     if (root / "agents-boilerplate").exists():
         wanted.append("agents-boilerplate/")
-    missing = [ln for ln in wanted if ln not in lines]
-    if not missing:
-        _log("[OK] .gitignore already covers model routing runtime files", quiet=quiet)
+    kept = [ln for ln in lines if ln not in STALE_GITIGNORE_LINES]
+    pruned = [ln for ln in lines if ln in STALE_GITIGNORE_LINES]
+    missing = [ln for ln in wanted if ln not in kept]
+    if not missing and not pruned:
+        _log("[OK] .gitignore already covers .protocol/ runtime", quiet=quiet)
         return False
-    new_content = _read_text(gitignore).rstrip("\n") + "\n" + "\n".join(missing) + "\n"
     if dry_run:
         for ln in missing:
             _log(f"[DRY-RUN] Would append {ln!r} to {gitignore}", quiet=quiet)
+        for ln in pruned:
+            _log(f"[DRY-RUN] Would prune stale {ln!r} from {gitignore}", quiet=quiet)
         return True
-    gitignore.write_text(new_content, encoding="utf-8")
+    gitignore.write_text("\n".join(kept + [ln for ln in missing if ln not in kept]).rstrip("\n") + "\n", encoding="utf-8")
+    for ln in pruned:
+        _log(f"[PRUNE] stale {ln!r} superseded by {RUNTIME_ROOT + '/'}", quiet=quiet)
     _log(f"[UPDATE] {gitignore}", quiet=quiet)
     return True
+
+
+def migrate_legacy_runtime(root: Path, *, dry_run: bool, quiet: bool) -> None:
+    """One-way move of the pre-consolidation workspace into .protocol/.
+    Whole-dir mv (contents preserved); both-sides-present = WARN, manual merge."""
+    legacy = root / WORKSPACE_LEAF
+    new = root / WORKSPACE_DIR
+    if legacy.exists() and not new.exists():
+        if dry_run:
+            _log(f"[DRY-RUN] Would migrate {legacy} -> {new}", quiet=quiet)
+        else:
+            new.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(legacy), str(new))
+            _log(f"[MIGRATE] {legacy} -> {new} (pins, heartbeat intact)", quiet=quiet)
+    elif legacy.exists() and new.exists():
+        print(f"[WARN] both {legacy} and {new} exist — merge manually, then drop the legacy dir.",
+              file=sys.stderr)
 
 
 def detect_agent_files(root: Path) -> list[str]:
@@ -755,6 +781,10 @@ def uninstall_cron(root: Path, *, quiet: bool) -> int:
 
 def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int, registry_path: str | None = None) -> dict:
     _warn_legacy(root)
+    pre = root / WORKSPACE_LEAF
+    if pre.exists():
+        print(f"[WARN] pre-consolidation runtime {pre} found. "
+              f"Migrate: mv {WORKSPACE_LEAF} {WORKSPACE_DIR}, re-run --install.", file=sys.stderr)
     reg, errors = load_registry(root, registry_path)
     proto = _resolve_proto_dir(root)
     gi_lines = _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else []
@@ -777,6 +807,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool, stale_after: int
         "state_exists": _state_path(root).exists(),
         "heartbeat_exists": _heartbeat_path(root).exists(),
         "legacy_runtime_found": _legacy_found(root),
+        "pre_consolidation_runtime_found": (root / WORKSPACE_LEAF).exists(),
         "active_pins": _read_state(root).get("pins", {}),
         "gitignore_ok": all(ln in gi_lines for ln in RUNTIME_GITIGNORE_LINES),
         "cron_present": cron_present(root),
@@ -917,6 +948,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.install:
         _warn_dual_presence(root)
+        migrate_legacy_runtime(root, dry_run=args.dry_run, quiet=args.quiet)
         ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
         if args.dry_run:
             _log(f"[DRY-RUN] Would create directory: {_workspace_dir(root)}", quiet=args.quiet)

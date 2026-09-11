@@ -41,14 +41,14 @@ python3 green_amber_red_team_protocol/init_teams.py --side red
 ```
 
 This creates (green side):
-- `green_amber_red_workspace/` directory
-- `green_amber_red_workspace/archive/` subdirectory
-- `green_amber_red_workspace/README.md`
-- `redteam/` exchange skeleton (inbox/outbox + archives) + `redteam/config.yml` (`side: green`)
-- Appends `green_amber_red_workspace/` and `redteam/` packet contents to `.gitignore`
+- `.protocol/green_amber_red_workspace/` directory
+- `.protocol/green_amber_red_workspace/archive/` subdirectory
+- `.protocol/green_amber_red_workspace/README.md`
+- `.protocol/redteam/` exchange skeleton (inbox/outbox + archives) + `config.yml` (`side: green`)
+- Appends `.protocol/` to `.gitignore` (single line covers workspace + exchange)
 - Appends Traffic-Light directives to `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or `GEMINI.md` if present
 
-Red side (`--side red`): only the `redteam/` skeleton + `config.yml` (`side: red`) + brief/report templates + packet gitignore lines. Commands refuse when run on the wrong side (each refusal names the correct workspace).
+Red side (`--side red`): only the `.protocol/redteam/` skeleton + `config.yml` (`side: red`) + brief/report templates (templates stay in the protocol copy). Commands refuse when run on the wrong side (each refusal names the correct workspace).
 
 Use `--dry-run` to preview changes without writing:
 
@@ -70,11 +70,25 @@ Available templates: `generic`, `backend`, `frontend`, `mobile`, `devops`.
 
 ### `plan-greenteam <prompt>` (alias `plan-green`)
 - **Role**: 🟢 Green Team
-- Creates or overwrites `green_amber_red_workspace/plan.md` with status `📋 PLANNED`.
-- Auto-archives any existing `✅ COMPLETED` plan to `green_amber_red_workspace/archive/plan_YYYYMMDD_HHMM.md`.
-- Overwriting a `📋 PLANNED` or `⏳ IN_PROGRESS` plan discards live work: warn the user and require explicit confirmation first.
+- Creates or overwrites `.protocol/green_amber_red_workspace/plan.md` with status `📋 PLANNED`.
+- Stamps a fresh `Plan-ID: <slug>-YYYYMMDD-HHMM` in the plan header (filename-derived, never reused).
+- Auto-archives any existing `✅ COMPLETED` plan to `.protocol/green_amber_red_workspace/archive/plan_YYYYMMDD_HHMM.md`.
+- Fallback (Q62-a): an existing `📋 PLANNED` or `⏳ IN_PROGRESS` plan is **auto-stashed** to `.protocol/green_amber_red_workspace/stash/plan_<plan-id>.md` (progress preserved as-is) and the new plan starts fresh — announce the stashed Plan ID and the restore command (`plan-resume-greenteam <plan-id>`). Deliberate parking stays manual via `plan-stash-greenteam`.
+- Mid-flight guard (Q64-a): if Amber is executing or a Red packet is open on the active plan, warn with both Plan IDs — *"Amber is executing `<active-id>`; start `<new-slug>` anyway? (confirm)"* — and require explicit confirmation before the stash-and-start.
 - Lists exact affected files and effort estimates in a task table.
 - **Does NOT modify source code.**
+
+### `plan-stash-greenteam` (alias `stash-green`)
+- **Role**: 🟢 Green Team
+- Parks the active `plan.md` — whatever its status — to `.protocol/green_amber_red_workspace/stash/plan_<plan-id>.md`, preserving status, task checkboxes, and progress verbatim. `plan.md` itself is removed (workspace returns to no-active-plan, not to a blank plan).
+- Stash = unfinished plans only; completed plans keep going to `archive/`. `ls stash/` is the unfinished-plan count.
+- Announce the Plan ID so user and agent reference the same plan from here on.
+
+### `plan-resume-greenteam <plan-id>` (alias `resume-green`)
+- **Role**: 🟢 Green Team
+- Lists `.protocol/green_amber_red_workspace/stash/` when no ID is given (Plan ID + slug + timestamp + status line per entry) and restores the chosen file to `.protocol/green_amber_red_workspace/plan.md` with status and progress intact.
+- Chain-safe: if a different unfinished plan is active, it stashes first (same fallback + mid-flight guard as `plan-greenteam`).
+- Restoring a `✅ COMPLETED` plan from `archive/` is out of scope — completed plans stay done; rework starts as a new plan citing the old Plan ID.
 
 ### `review-greenteam` (alias `review-green`)
 - **Role**: 🟢 Green Team — any agent or model playing planner (this is what keeps planning agent-agnostic across sessions and models).
@@ -83,7 +97,7 @@ Available templates: `generic`, `backend`, `frontend`, `mobile`, `devops`.
 
 ### `execute-amberteam` (alias `exec-amber`)
 - **Role**: 🟠 Amber Team
-- Reads `green_amber_red_workspace/plan.md`.
+- Reads `.protocol/green_amber_red_workspace/plan.md`.
 - Evaluates dependencies and affected files.
 - Outputs a concise executive summary.
 - **Asks user:** *"Should the agent proceed with executing the plan and its tasks?"* — the confirmation gate survives the rename; "execute" never means "skip approval".
@@ -99,33 +113,33 @@ Available templates: `generic`, `backend`, `frontend`, `mobile`, `devops`.
 ### `send-redteam` (alias `send-red`)
 - **Role**: 🟢 Green Team (audit-gate handoff)
 - Runs after `review-amberteam` passes and the user confirms dispatching Red Team.
-- If `redteam_enabled: false` in `redteam/config.yml`: reply "red team is not available" and stop.
-- Builds a timestamped packet `packet_green_YYYYMMDD_HHMM/` in this workspace's `redteam/inbox/`: brief (stamped), artifacts, defect-report template, plan-version citation, cross-ack of the previous packet done (or explicitly still-open).
+- If `redteam_enabled: false` in `.protocol/redteam/config.yml`: reply "red team is not available" and stop.
+- Builds a timestamped packet `packet_green_YYYYMMDD_HHMM/` in this workspace's `.protocol/redteam/inbox/`: brief (stamped), artifacts, defect-report template, Plan-ID citation (so red findings map to the exact plan even after stash/resume cycles), cross-ack of the previous packet done (or explicitly still-open).
 - New packet per mission cycle; append only for same-cycle top-ups. Always inform the user either way.
-- Delivery: `redteam_accessible: true` → copy to the red workspace's `redteam/inbox/`; `false` → ask the user to carry it (brief stamps `return_to:` so the path is concrete).
+- Delivery: `redteam_accessible: true` → copy to the red workspace's `.protocol/redteam/inbox/`; `false` → ask the user to carry it (brief stamps `return_to:` so the path is concrete).
 - Amber Team stays out of the QA loop: the team that passed review hands off, the team that wrote the code does not.
 
 ### Red Team commands (own session, own workspace copy, `side: red`)
 
-Red Team testing happens in an **isolated session** with zero developer bias. Red works only inside its own `redteam/` folders and never touches source.
+Red Team testing happens in an **isolated session** with zero developer bias. Red works only inside its own `.protocol/redteam/` folders and never touches source.
 
 ### `test-redteam` (alias `test-red`)
 - **Role**: 🔴 Red Team
-- Reads own `redteam/inbox` latest packet, makes a test plan, runs black-box tests.
+- Reads own `.protocol/redteam/inbox` latest packet, makes a test plan, runs black-box tests.
 - Sequential dual-red (high-risk opt-in): B reads A's outbox findings from its own inbox copy, then tests adversarially against them too.
 
 ### `finish-redteam` (alias `finish-red`)
 - **Role**: 🔴 Red Team
-- Writes the verdict packet `packet_red_YYYYMMDD_HHMM/` to own `redteam/outbox/`: filled defect report (PASS/FAIL + matrix), cross-ack of the inbound green packet done, author-tagged sections (append, never rewrite prior findings).
+- Writes the verdict packet `packet_red_YYYYMMDD_HHMM/` to own `.protocol/redteam/outbox/`: filled defect report (PASS/FAIL + matrix), cross-ack of the inbound green packet done, author-tagged sections (append, never rewrite prior findings).
 - Reachable workspace: Green pulls it at `review-redteam`. Air-gap: hand it to the carrier for `return_to:`.
 
 ### `recheck-redteam` (alias `recheck-red`)
 - **Role**: 🔴 Red Team
 - Reads own inbox + outbox, diffs inbox findings against the packet's open-defects snapshot (never duplicate an already-reported defect), then asks the user: plan a retest, or take other action? Never auto-starts a new test cycle.
 
-### Defect ledger (`green_amber_red_workspace/defects.md`, green side)
+### Defect ledger (`.protocol/green_amber_red_workspace/defects.md`, green side)
 
-Single-writer-per-field, append-only history. **Red writes findings** — via defect reports only, never this file. **Green transcribes** findings here at `review-redteam` and owns every fix-lifecycle field (`ACKED → IN_FIX → FIXED → VERIFIED → CLOSED`, each stamped who + when + packet ref). Amber's fixes flip linked task rows; Green reconciles. Reopening a `CLOSED` defect creates a NEW row referencing the old ID. Template: `templates/defect_ledger.md`; created empty by init (never overwritten). Red-side visibility comes through per-packet open-defect snapshots — `recheck-redteam` diffs before reporting so sequential teams never duplicate. IDs: `BUG-YYYYMMDD-NNN` + severity.
+Single-writer-per-field, append-only history. **Red writes findings** — via defect reports only, never this file. **Green transcribes** findings here at `review-redteam` and owns every fix-lifecycle field (`ACKED → IN_FIX → FIXED → VERIFIED → CLOSED`, each stamped who + when + packet ref + Plan-ID). Amber's fixes flip linked task rows; Green reconciles. Reopening a `CLOSED` defect creates a NEW row referencing the old ID. Template: `templates/defect_ledger.md`; created empty by init (never overwritten). Red-side visibility comes through per-packet open-defect snapshots — `recheck-redteam` diffs before reporting so sequential teams never duplicate. IDs: `BUG-YYYYMMDD-NNN` + severity.
 
 ### `review-redteam` (alias `review-red`)
 - **Role**: 🟢 Green Team inspection (Red Team keeps no narrative control)
@@ -147,19 +161,21 @@ Single-writer-per-field, append-only history. **Red writes findings** — via de
 - Verify ledger: findings without IDs, transitions missing who/when/packet stamps, `FIXED`-but-never-`VERIFIED` aging, red-side ledger writes (forbidden — findings travel via reports only).
 - Present a drift matrix and ask the user (`Q1-a` style): realign? Realignment = re-issue brief, re-inject directives, archive orphans — only on approval.
 
-### Red Team packet exchange (`redteam/`)
+### Red Team packet exchange (`.protocol/redteam/`)
 
 Both sides carry this layout (created by `init_teams.py --side green|red`):
 
 ```
-<protocol-copy>/redteam/
+.protocol/redteam/
 ├── config.yml            # side: green|red, redteam_enabled, redteam_accessible,
-│                         # redteam_path, return_to  (LOCAL values per copy)
-├── inbox/                # ACTIVE inbound packets (contents gitignored)
-├── outbox/               # ACTIVE outbound packets (contents gitignored)
-├── inbox-archive/        # acked-done packets (contents gitignored)
-└── outbox-archive/       # acked-done packets (contents gitignored)
+│                         # redteam_path, return_to  (LOCAL values per workspace)
+├── inbox/                # ACTIVE inbound packets
+├── outbox/               # ACTIVE outbound packets
+├── inbox-archive/        # acked-done packets
+└── outbox-archive/       # acked-done packets
 ```
+
+(Everything under `.protocol/` is gitignored by the single `.protocol/` line.)
 
 * Active = in inbox/outbox; inactive = in archives. Latest packet = active mission.
 * Isolation default: **isolated dir**; high-risk: **air-gap**; low-risk fast loops may share. Switchable in `config.yml`; documented per mission.
@@ -167,7 +183,7 @@ Both sides carry this layout (created by `init_teams.py --side green|red`):
 
 ---
 
-## 📋 Standard `green_amber_red_workspace/plan.md` Template
+## 📋 Standard `.protocol/green_amber_red_workspace/plan.md` Template
 
 When `plan-greenteam` creates a plan, it MUST follow this format:
 
@@ -177,6 +193,7 @@ When `plan-greenteam` creates a plan, it MUST follow this format:
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM`
 
 ## 1. Problem Context & Architectural Scope
 [Brief explanation of the objective, constraints, and architecture]
@@ -197,12 +214,13 @@ When `plan-greenteam` creates a plan, it MUST follow this format:
 
 ## ✅ Initialization Verification Checklist
 
-- [ ] Folder `green_amber_red_workspace/` exists in project root.
-- [ ] Subfolder `green_amber_red_workspace/archive/` exists.
-- [ ] `.gitignore` contains `green_amber_red_workspace/`.
-- [ ] `green_amber_red_workspace/README.md` documents team personas and commands.
-- [ ] Master agent directives reference the 10 commands + aliases: `plan-greenteam` (`plan-green`), `review-greenteam` (`review-green`), `execute-amberteam` (`exec-amber`), `review-amberteam` (`review-amber`), `send-redteam` (`send-red`), `verify-green-amber-red-team`, `review-redteam` (`review-red`), `test-redteam` (`test-red`), `finish-redteam` (`finish-red`), `recheck-redteam` (`recheck-red`).
-- [ ] `redteam/` skeleton exists with `config.yml` (`side:` stamped); packet contents gitignored.
+- [ ] Folder `.protocol/green_amber_red_workspace/` exists in project root.
+- [ ] Subfolder `.protocol/green_amber_red_workspace/archive/` exists.
+- [ ] Subfolder `.protocol/green_amber_red_workspace/stash/` exists (unfinished parked plans; `ls stash/` = unfinished count).
+- [ ] `.gitignore` contains `.protocol/green_amber_red_workspace/`.
+- [ ] `.protocol/green_amber_red_workspace/README.md` documents team personas and commands.
+- [ ] Master agent directives reference the 12 commands + aliases: `plan-greenteam` (`plan-green`), `plan-stash-greenteam` (`stash-green`), `plan-resume-greenteam` (`resume-green`), `review-greenteam` (`review-green`), `execute-amberteam` (`exec-amber`), `review-amberteam` (`review-amber`), `send-redteam` (`send-red`), `verify-green-amber-red-team`, `review-redteam` (`review-red`), `test-redteam` (`test-red`), `finish-redteam` (`finish-red`), `recheck-redteam` (`recheck-red`).
+- [ ] `.protocol/redteam/` skeleton exists with `config.yml` (`side:` stamped); all runtime gitignored via `.protocol/`.
 - [ ] `defects.md` exists green-side (from template, never overwritten); every row stamped; no red-side ledger writes.
 
 ---

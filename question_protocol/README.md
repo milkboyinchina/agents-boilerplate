@@ -7,7 +7,7 @@ Unlike ad-hoc questioning, this protocol is **conversation-scoped, token-lean, a
 - `Q1: / Q1. / Q1=` free-form aliases, case-insensitive options, `skip Qn` support.
 - Delta asks + inline options: new questions full-text once, carried opens collapse to one line.
 - Importance flags: `Qn!` persists through skip + compaction; plain skips auto-park (zero re-list cost).
-- Counter survives compaction via `question_workspace/state.json` + transcript scan.
+- Counter survives compaction via `.protocol/question_workspace/state.json` + transcript scan.
 - Re-baseline at >99 closed questions, only on user approval.
 
 ---
@@ -60,7 +60,7 @@ Or tell your agent:
 
 ```
 <project-root>/
-├── question_workspace/                 # RUNTIME (gitignored)
+├── .protocol/question_workspace/                 # RUNTIME (gitignored)
 │   └── state.json                      # counter + open questions (created on first ask)
 └── question_protocol/                  # SOURCE (committed): CLI + docs + templates
     ├── init_questions.py               # bootstrap + validator CLI
@@ -119,7 +119,7 @@ python3 question_protocol/init_questions.py --validate <file>
 
 ## 🔗 Relationship to Other Boilerplates
 
-* `green_amber_red_workspace`: `execute-amberteam` confirmations MUST use `Q1-a) Yes / Q1-b) No`.
+* `.protocol/green_amber_red_workspace`: `execute-amberteam` confirmations MUST use `Q1-a) Yes / Q1-b) No`.
 * `handoff_protocol`: include Open Questions (`Qn` + status) in handoff files for resume recovery.
 
 ---

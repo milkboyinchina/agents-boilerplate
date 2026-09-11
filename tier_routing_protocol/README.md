@@ -55,8 +55,8 @@ Or tell your agent:
 
 ```
 <project-root>/
-├── .gitignore                              # += tier_routing_workspace/* (init-managed)
-├── tier_routing_workspace/                 # RUNTIME (gitignored): heartbeat + pins
+├── .gitignore                              # += .protocol/ (single line, init-managed)
+├── .protocol/tier_routing_workspace/                 # RUNTIME (gitignored): heartbeat + pins
 │   ├── heartbeat.json                      # weekly cron output
 │   └── routing_state.json                  # task pins
 └── tier_routing_protocol/                  # SOURCE (committed): CLI + registry + docs
@@ -126,7 +126,7 @@ Routing can be switched off per workspace or per tool — e.g. temporarily hand-
 
 ## 🔗 Relationship to Other Boilerplates
 
-* `green_amber_red_workspace`: Tier column in `plan.md` task table; Amber resolves pre-execution.
+* `.protocol/green_amber_red_workspace`: Tier column in `plan.md` task table; Amber resolves pre-execution.
 * `handoff_protocol`: record tier + resolved ID + active pin for resume recovery.
 * `question_protocol`: refresh approvals + no-models-file branches are `Q1/Q1-a` turns.
 

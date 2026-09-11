@@ -3,6 +3,7 @@
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM` (stamped at creation; filename-derived, never reused — cited in packets, defect rows, and stash listings so agents and users track the same plan)
 
 ## 1. Problem Context & Architectural Scope
 [API contract, schema changes, business logic]

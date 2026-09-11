@@ -2,18 +2,17 @@
 
 Tracked future work for this collection. Newest first. Checked items move to `CHANGELOG.md` on completion.
 
-## Tackle order (recommended sequence — check off top-down)
+## Tackle order (locked sequence — check off top-down; Q67-a)
 
-- [ ] 1. Test workspace re-copy + idempotent re-run (validate shipped work first, always)
-- [ ] 2. `.protocol/` consolidation (Q58/Q59 decided at build — freezes all paths; the churn ends here)
-- [ ] 3. Uninstall build (Q60/Q61 decided at build — closes install → reinstall → uninstall)
-- [ ] 4. `agent_builder_protocol/` (base for all workspaces, built on frozen paths/blocks)
-- [ ] 5. `architect_protocol/`
-- [ ] 6. `memory_protocol/`
-- [ ] 7. `decision_protocol/`
-- [ ] 8. `release_protocol/`
-- [ ] 9. `onboarding_protocol/` (after architect — generated from its map)
-- [ ] 10. Tier IDs fill (whenever vendor catalog decided — floats, independent of sequence)
+- [x] 1. `.protocol/` consolidation (Q58-a + Q59-a locked — all runtime incl. redteam exchange under `.protocol/`, single gitignore line; test workspace is the migration field test)
+- [ ] 2. Upgrade lifecycle (independent per-protocol versions + init stamp/report, README upgrade docs, `--backup`/`--restore` bundle format, `--uninstall` reusing it — Q60/Q61 resurface at build)
+- [ ] 3. `agent_builder_protocol/` (base for all workspaces, built on frozen paths/blocks)
+- [ ] 4. `architect_protocol/`
+- [ ] 5. `memory_protocol/`
+- [ ] 6. `decision_protocol/`
+- [ ] 7. `release_protocol/`
+- [ ] 8. `onboarding_protocol/` (after architect — generated from its map)
+- [ ] 9. Tier IDs fill (whenever vendor catalog decided — floats, independent of sequence)
 
 ## Planned structural changes
 

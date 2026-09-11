@@ -41,13 +41,13 @@ All handoff artifacts are stored inside the project workspace:
 
 ```
 <project-root>/
-└── handoff_workspace/
+└── .protocol/handoff_workspace/
     ├── handoff-YYYYMMDD-HHMM.md       # active handoff
     └── archive/
         └── handoff-YYYYMMDD-HHMM.md   # completed handoffs
 ```
 
-The `handoff_workspace/` folder is automatically added to `.gitignore` so handoff files never leak into version control.
+The `.protocol/handoff_workspace/` folder is automatically added to `.gitignore` so handoff files never leak into version control.
 
 ---
 
@@ -60,7 +60,7 @@ The `handoff_workspace/` folder is automatically added to `.gitignore` so handof
 handoff.py start
     │
     ▼
-handoff_workspace/handoff-YYYYMMDD-HHMM.md   (active)
+.protocol/handoff_workspace/handoff-YYYYMMDD-HHMM.md   (active)
     │
     ▼
 /handoff-resume
@@ -75,7 +75,7 @@ agent continues work
 handoff.py done
     │
     ▼
-handoff_workspace/archive/handoff-YYYYMMDD-HHMM.md   (archived)
+.protocol/handoff_workspace/archive/handoff-YYYYMMDD-HHMM.md   (archived)
 ```
 
 ### Rules
@@ -97,7 +97,7 @@ Every handoff file MUST contain these 9 sections:
 
 ### 2. Active Task / Plan Status
 - Current task name and phase.
-- `green_amber_red_workspace/plan.md` status if present.
+- `.protocol/green_amber_red_workspace/plan.md` status if present.
 - Risk level if applicable.
 
 ### 3. Files Changed
@@ -150,7 +150,7 @@ Every handoff file MUST contain these 9 sections:
 ### On task completion
 
 1. Run `python3 handoff_protocol/handoff.py done`.
-2. The active handoff is moved to `handoff_workspace/archive/`.
+2. The active handoff is moved to `.protocol/handoff_workspace/archive/`.
 
 ---
 
@@ -158,16 +158,16 @@ Every handoff file MUST contain these 9 sections:
 
 This handoff protocol is **complementary** to:
 
-- **Green-Amber-Red Teams**: structures planning, execution, and auditing. Handoff auto-detects `green_amber_red_workspace/plan.md` status.
+- **Green-Amber-Red Teams**: structures planning, execution, and auditing. Handoff auto-detects `.protocol/green_amber_red_workspace/plan.md` status.
 - **Global agent rules** such as `~/.config/opencode/rules/handoff.md`: global rules may still apply for cross-session continuity; this protocol adds project-local state capture.
 
 ---
 
 ## 8. Verification Checklist
 
-- [ ] `handoff_workspace/` exists in project root.
-- [ ] `handoff_workspace/archive/` exists.
-- [ ] `.gitignore` contains `handoff_workspace/`.
+- [ ] `.protocol/handoff_workspace/` exists in project root.
+- [ ] `.protocol/handoff_workspace/archive/` exists.
+- [ ] `.gitignore` contains the single `.protocol/` line.
 - [ ] `handoff.py start` creates a handoff file.
 - [ ] `handoff.py resume` reads the active handoff.
 - [ ] `handoff.py done` moves the active handoff to archive.

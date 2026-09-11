@@ -18,14 +18,18 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
 
 __version__ = "1.1.0"
 
 PROTOCOL_DIR = "question_protocol"
-WORKSPACE_DIR = "question_workspace"
+RUNTIME_ROOT = ".protocol"  # all runtime state lives here (single .gitignore line)
+WORKSPACE_LEAF = "question_workspace"  # pre-consolidation name: legacy detect + migrate
+WORKSPACE_DIR = f"{RUNTIME_ROOT}/{WORKSPACE_LEAF}"
 STATE_NAME = "state.json"
+STALE_GITIGNORE_LINES = (f"{WORKSPACE_LEAF}/{STATE_NAME}",)
 REBASELINE_THRESHOLD = 99
 # Pre-split state location. Frozen intentionally: detected (with mv hint), never written.
 # NOTE: repo-wide renames must EXCLUDE this line.
@@ -47,7 +51,7 @@ DIRECTIVE_BLOCK = """\n\
 4. **Delta asks**: new questions full-text once; carried opens collapse to one line (`Q2. … → shown, SHOW Q2 for full text`). Max 4 open. Late answers by original number MUST resolve.
 5. **Importance flags**: `Qn!` = must-answer (persists through skip + compaction); plain `Qn` = answer-or-let-die (auto-parks if skipped, still answerable by number). User controls: `Qn! : keep asking`, `Qn: drop` kills it.
 6. **Long sessions**: at >99 closed questions, PROPOSE `Archive Q1-Q99 and re-baseline to Q1?` — only on approval (archived refs `E1-Q5`).
-7. **Compaction**: persist `question_workspace/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list `!` opens in full (plain opens IDs-only).
+7. **Compaction**: persist `.protocol/question_workspace/state.json`; on resume `next_id = max(state, transcript max + 1)`, announce recovery and re-list `!` opens in full (plain opens IDs-only).
 """.strip() + "\n"
 
 # Matches E2-Q12-a, Q3, q1-B, Q4!, Q4: text, Q5. text, Q6= text, skip Q7
@@ -182,21 +186,44 @@ def _maybe_create_directives(root: Path, *, dry_run: bool, quiet: bool, assume_y
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
     """Gitignore runtime counter state in target workspaces (opt out by deleting the line)."""
     gitignore = root / ".gitignore"
-    wanted = [f"{WORKSPACE_DIR}/{STATE_NAME}"]
+    wanted = [f"{RUNTIME_ROOT}/"]
     if (root / "agents-boilerplate").exists():
         wanted.append("agents-boilerplate/")
-    missing = [ln for ln in wanted if ln not in _read_text(gitignore).splitlines()]
-    if not missing:
-        _log("[OK] .gitignore already covers question workspace state", quiet=quiet)
+    lines = _read_text(gitignore).splitlines()
+    kept = [ln for ln in lines if ln not in STALE_GITIGNORE_LINES]
+    pruned = [ln for ln in lines if ln in STALE_GITIGNORE_LINES]
+    missing = [ln for ln in wanted if ln not in kept]
+    if not missing and not pruned:
+        _log("[OK] .gitignore already covers .protocol/ runtime", quiet=quiet)
         return False
-    new_content = _read_text(gitignore).rstrip("\n") + "\n" + "\n".join(missing) + "\n"
     if dry_run:
         for ln in missing:
             _log(f"[DRY-RUN] Would append {ln!r} to {gitignore}", quiet=quiet)
+        for ln in pruned:
+            _log(f"[DRY-RUN] Would prune stale {ln!r} from {gitignore}", quiet=quiet)
         return True
-    gitignore.write_text(new_content, encoding="utf-8")
+    gitignore.write_text("\n".join(kept + [ln for ln in missing if ln not in kept]).rstrip("\n") + "\n", encoding="utf-8")
+    for ln in pruned:
+        _log(f"[PRUNE] stale {ln!r} superseded by {RUNTIME_ROOT + '/'}", quiet=quiet)
     _log(f"[UPDATE] {gitignore}", quiet=quiet)
     return True
+
+
+def migrate_legacy_runtime(root: Path, *, dry_run: bool, quiet: bool) -> None:
+    """One-way move of the pre-consolidation workspace into .protocol/.
+    Whole-dir mv (contents preserved); both-sides-present = WARN, manual merge."""
+    legacy = root / WORKSPACE_LEAF
+    new = root / WORKSPACE_DIR
+    if legacy.exists() and not new.exists():
+        if dry_run:
+            _log(f"[DRY-RUN] Would migrate {legacy} -> {new}", quiet=quiet)
+        else:
+            new.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(legacy), str(new))
+            _log(f"[MIGRATE] {legacy} -> {new} (question state intact)", quiet=quiet)
+    elif legacy.exists() and new.exists():
+        print(f"[WARN] both {legacy} and {new} exist — merge manually, then drop the legacy dir.",
+              file=sys.stderr)
 
 
 def inject_directives(root: Path, agent_files: list[str], *, dry_run: bool, quiet: bool, force: bool = False) -> list[str]:
@@ -291,6 +318,10 @@ def transcript_max_q(path: Path) -> int:
 
 def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
     _warn_legacy(root)
+    pre = root / WORKSPACE_LEAF
+    if pre.exists():
+        print(f"[WARN] pre-consolidation runtime {pre} found. "
+              f"Migrate: mv {WORKSPACE_LEAF} {WORKSPACE_DIR}, re-run init.", file=sys.stderr)
     proto = _resolve_protocol_dir(root)
     state = _read_state(root)
     agent_files = detect_agent_files(root)
@@ -307,10 +338,11 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         "state_exists": _state_path(root).exists(),
         "dual_presence": str(_dual_presence(root)) if _dual_presence(root) else None,
         "legacy_state_found": _is_legacy_state(root),
+        "pre_consolidation_runtime_found": (root / WORKSPACE_LEAF).exists(),
         "next_id": state.get("next_id"),
         "epoch": state.get("epoch"),
         "open_count": len(state.get("open", [])) if isinstance(state.get("open"), list) else None,
-        "gitignore_ok": f"{WORKSPACE_DIR}/{STATE_NAME}" in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
+        "gitignore_ok": f"{RUNTIME_ROOT}/" in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
         "directives_ok": directives_ok,
         "directives_hint": (None if agent_files else
                             "No directive file found — run init and answer Q1-a to create AGENTS.md."),
@@ -367,6 +399,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     _warn_dual_presence(root)
+    migrate_legacy_runtime(root, dry_run=args.dry_run, quiet=args.quiet)
     ensure_gitignore(root, dry_run=args.dry_run, quiet=args.quiet)
     if args.dry_run:
         _log(f"[DRY-RUN] Would create directory: {_workspace_dir(root)}", quiet=args.quiet)

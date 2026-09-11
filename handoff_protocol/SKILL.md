@@ -1,6 +1,6 @@
 ---
 name: handoff_protocol
-description: Captures and resumes project-local AI agent session state using the handoff_workspace folder. Use when the user says /handoff-start, /handoff-resume, "pause and capture state", "continue from handoff", or similar session continuity commands.
+description: Captures and resumes project-local AI agent session state using the .protocol/handoff_workspace folder. Use when the user says /handoff-start, /handoff-resume, "pause and capture state", "continue from handoff", or similar session continuity commands.
 ---
 
 # Handoff Protocol Skill
@@ -19,7 +19,7 @@ Use this skill whenever the user says:
 This protocol is **project-local and manual**:
 - No global installation.
 - No automatic triggers based on quota or checkpoints.
-- All files live in `<project-root>/handoff_workspace/`.
+- All files live in `<project-root>/.protocol/handoff_workspace/`.
 
 ---
 
@@ -27,8 +27,8 @@ This protocol is **project-local and manual**:
 
 ```
 <project-root>/
-├── .gitignore                              # contains handoff_workspace/
-└── handoff_workspace/
+├── .gitignore                              # contains .protocol/ (single line)
+└── .protocol/handoff_workspace/
     ├── handoff.py                          # CLI
     ├── README.md
     ├── HANDOFF_PROTOCOL.md
@@ -55,7 +55,7 @@ If an active handoff already exists, ask the user whether to run with `--force`.
 
 The agent MUST:
 1. Answer the interactive prompts honestly.
-2. Include the current `green_amber_red_workspace/plan.md` status if available.
+2. Include the current `.protocol/green_amber_red_workspace/plan.md` status if available.
 3. Confirm the handoff file path to the user.
 
 ### /handoff-resume
@@ -79,16 +79,16 @@ Run:
 python3 handoff_protocol/handoff.py done
 ```
 
-This moves the active handoff to `handoff_workspace/archive/`.
+This moves the active handoff to `.protocol/handoff_workspace/archive/`.
 
 ---
 
 ## ✅ Completion Criteria
 
 Before responding to the user, verify:
-- [ ] `handoff_workspace/` exists.
-- [ ] `handoff_workspace/archive/` exists.
-- [ ] `.gitignore` contains `handoff_workspace/`.
+- [ ] `.protocol/handoff_workspace/` exists.
+- [ ] `.protocol/handoff_workspace/archive/` exists.
+- [ ] `.gitignore` contains the single `.protocol/` line.
 - [ ] For `/handoff-start`: a new active handoff file was created.
 - [ ] For `/handoff-resume`: the active handoff summary was read and understood.
 - [ ] For task completion: the active handoff was archived.

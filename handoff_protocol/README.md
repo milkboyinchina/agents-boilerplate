@@ -6,7 +6,7 @@ Unlike global quota-based handoffs, this protocol is **manual**:
 - `/handoff-start` — capture the current state.
 - `/handoff-resume` — continue from the last handoff.
 
-All handoff files live inside the project-local `handoff_workspace/` folder, which is automatically gitignored.
+All handoff files live inside the project-local `.protocol/handoff_workspace/` folder, which is automatically gitignored.
 
 ---
 
@@ -49,8 +49,8 @@ Or tell your agent:
 
 ```
 <project-root>/
-├── .gitignore                              # contains handoff_workspace/
-└── handoff_workspace/
+├── .gitignore                              # contains .protocol/ (single line)
+└── .protocol/handoff_workspace/
     ├── handoff.py                          # CLI
     ├── README.md                           # this file
     ├── HANDOFF_PROTOCOL.md                 # full specification
@@ -74,7 +74,7 @@ python3 handoff_protocol/handoff.py [OPTIONS] <COMMAND>
 |---|---|
 | `start` | Create a new active handoff file. |
 | `resume` | Print a resume summary from the active handoff. |
-| `done` | Move the active handoff to `handoff_workspace/archive/`. |
+| `done` | Move the active handoff to `.protocol/handoff_workspace/archive/`. |
 | `status` | Show whether an active handoff exists. |
 
 | Option | Description |
@@ -103,7 +103,7 @@ python3 handoff_protocol/handoff.py [OPTIONS] <COMMAND>
 [python3 handoff_protocol/handoff.py start]
         │
         ▼
-[handoff_workspace/handoff-YYYYMMDD-HHMM.md created]
+[.protocol/handoff_workspace/handoff-YYYYMMDD-HHMM.md created]
         │
         ▼
 [session ends or pauses]
@@ -121,7 +121,7 @@ python3 handoff_protocol/handoff.py [OPTIONS] <COMMAND>
 [when done: python3 handoff_protocol/handoff.py done]
         │
         ▼
-[handoff moved to handoff_workspace/archive/]
+[handoff moved to .protocol/handoff_workspace/archive/]
 ```
 
 ---
@@ -130,10 +130,10 @@ python3 handoff_protocol/handoff.py [OPTIONS] <COMMAND>
 
 This handoff protocol is **complementary** to the Traffic-Light teaming protocol:
 
-- `green_amber_red_workspace` structures **planning, execution, and auditing** across agents.
-- `handoff_workspace` preserves **session continuity** when a single agent session pauses or resumes.
+- `.protocol/green_amber_red_workspace` structures **planning, execution, and auditing** across agents.
+- `.protocol/handoff_workspace` preserves **session continuity** when a single agent session pauses or resumes.
 
-The `handoff.py start` command auto-detects `green_amber_red_workspace/plan.md` status and includes it in the handoff file.
+The `handoff.py start` command auto-detects `.protocol/green_amber_red_workspace/plan.md` status and includes it in the handoff file.
 
 ---
 

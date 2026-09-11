@@ -4,6 +4,36 @@ All changes to this boilerplate collection MUST be logged here in **reverse-chro
 
 ---
 
+## 📝 [2026-09-11] `.protocol/` Consolidation (Q58-a/Q59-a) — All Runtime Under One Hidden Dir
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - All runtime relocated: `green_amber_red_workspace/`, `handoff_workspace/`, `question_workspace/`, `tier_routing_workspace/`, and the redteam exchange (`redteam/` packets + `config.yml`) → `.protocol/`. Sources, templates, registry stay tracked in `*_protocol/` copies.
+  - Single `.protocol/` gitignore line (Q59-a) replaces ~10 granular ones; each CLI prunes its stale lines automatically (`[PRUNE]` announced, exact/regex matches only).
+  - Migration: init detects pre-consolidation dirs → whole-dir `mv` with `[MIGRATE]` announce (plans, ledgers, stash, handoffs, pins, heartbeat, packets intact); both-sides-present = WARN + manual merge. Exchange migrates packet contents + customized configs only (value-line comparison, comment-drift-proof); untouched template configs + `.gitkeep` skeleton stay. Migrated `side:` stamp preserved (side resolves post-migration).
+  - `--check` gains `pre_consolidation_runtime_found` (+ WARN with `mv` hint); green `stash_exists`; `return_to:` default now `.protocol/redteam/outbox`.
+  - Docs: all specs/SKILLs/READMEs/cron docs/brief+ledger templates swept; `AGENTS.md` authoring rules (`.protocol/` rule, 12-command table); `CONTRIBUTING.md` split + never-commit lists; `NEW_PROTOCOL_CHECKLIST.md` runtime rule; root README roadmap marked in-progress.
+  - Migration commands: pull/re-copy collection, re-run the four inits (auto-migrate + prune), `--check` ×4 green. Test workspace (`android_app_auto_tester`) is the live field test.
+- **Quality & Verification Results**:
+  - `py_compile` ×4 clean; fresh sandbox install green (single-line `.gitignore`, full `.protocol/` tree, all `--check` keys incl. `stash_exists`); migration drill (legacy dirs + packet + customized red config + stale gitignore) → all content intact, side preserved, gitignore reduced to `.protocol/`; idempotent re-runs zero-migrate; stale-path grep clean (history + frozen legacy WARNs excluded).
+  - Caught live during verify: dropped `STASH_DIR` constant (constants-edit collision), `ensure_redteam` stale `proto` ref (NameError), spurious exchange migration of untouched template configs, side-flip on migrated red configs (resolve-before-migrate) — all fixed + re-drilled.
+
+---
+
+## 📝 [2026-09-11] Green: Plan Stash/Resume + Plan-ID (12 Commands)
+- **Agent / Author**: Muse Spark (OpenCode)
+- **Lifecycle Status**: `[COMPLETED]`
+- **Scope / Components**:
+  - New commands `plan-stash-greenteam` (`stash-green`) + `plan-resume-greenteam` (`resume-green`): park unfinished `plan.md` to `stash/` (progress verbatim), restore by Plan ID (chain-safe — a different active plan stashes first). `stash/` = unfinished, `archive/` = completed; `ls stash/` is the unfinished count.
+  - `plan-greenteam` fallback (Q62-a): unfinished active plan auto-stashes (announce ID + resume cmd); mid-flight guard (Q64-a): Amber-executing / Red-packet-open warns with both Plan IDs, confirm required.
+  - Plan-ID (`<slug>-YYYYMMDD-HHMM`, Q63-a/Q64-a tracking): stamped in all 5 plan templates (`.md` + embedded `PLAN_TEMPLATES`), plan-template spec, packets (brief citation), defect ledger rows.
+  - `init_teams.py`: creates `stash/`, `--check` gains `stash_exists`, directive block + workspace README lifecycle updated, `--init-plan` SKIP hint points at auto-stash.
+  - Docs: `INITIALIZE_*` specs, `SKILL.md` (12 commands), protocol README table + tree + ledger line, root README count 10 → 12.
+- **Quality & Verification Results**:
+  - `py_compile` clean; temp-workspace `--yes` install green incl. `stash_exists: true`; idempotent re-run `[SKIP]` clean; both alias forms present in all canonical tables.
+
+---
+
 ## 📝 [2026-09-10] Quick Start: Reinstall/Upgrade Flow Documented
 - **Agent / Author**: Muse Spark (OpenCode)
 - **Lifecycle Status**: `[COMPLETED]`

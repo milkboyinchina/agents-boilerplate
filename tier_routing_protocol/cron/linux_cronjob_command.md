@@ -22,5 +22,5 @@ crontab -l | grep -v 'tier-routing-heartbeat' | grep -v 'resolve_model.py heartb
 # or: python3 <workspace>/tier_routing_protocol/resolve_model.py --uninstall-cron
 ```
 
-The job's sole output is `tier_routing_workspace/heartbeat.json` (gitignored).
+The job's sole output is `.protocol/tier_routing_workspace/heartbeat.json` (gitignored).
 Exit `2` = model drift detected (notifiers may fire); exit `1` = all tools failed.

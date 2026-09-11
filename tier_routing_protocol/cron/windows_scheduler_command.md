@@ -23,4 +23,4 @@ Remove:
 schtasks /Delete /TN "tier-routing-heartbeat" /F
 ```
 
-The job's sole output is `tier_routing_workspace\heartbeat.json` (gitignored).
+The job's sole output is `.protocol\tier_routing_workspace\heartbeat.json` (gitignored).

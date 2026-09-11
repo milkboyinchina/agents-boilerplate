@@ -21,22 +21,33 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 from typing import Iterable
 
 __version__ = "1.1.0"
 
-WORKSPACE_DIR = "green_amber_red_workspace"
+# All runtime state lives under .protocol/ (single .gitignore line). Sources stay
+# in the protocol copy, tracked. Q58-a/Q59-a.
+RUNTIME_ROOT = ".protocol"
+WORKSPACE_LEAF = "green_amber_red_workspace"  # pre-consolidation name: legacy detect + migrate
+WORKSPACE_DIR = f"{RUNTIME_ROOT}/{WORKSPACE_LEAF}"
 # Pre-Q39 runtime name. Frozen intentionally: detected (with mv hint), never created.
 # NOTE: repo-wide renames must EXCLUDE this line.
 LEGACY_WORKSPACE_DIR = "green_amber_red_teams"
 ARCHIVE_DIR = "archive"
+STASH_DIR = "stash"
 README_NAME = "README.md"
 PLAN_NAME = "plan.md"
-GITIGNORE_LINE = f"{WORKSPACE_DIR}/"
-REDTEAM_SUBDIRS = ("redteam/inbox", "redteam/outbox", "redteam/inbox-archive", "redteam/outbox-archive")
-CONFIG_NAME = "redteam/config.yml"
+GITIGNORE_LINE = f"{RUNTIME_ROOT}/"
+# Stale ignore lines pruned automatically once .protocol/ covers them.
+STALE_GITIGNORE_PATTERNS = (r"^green_amber_red_workspace/$",
+                            r"^.*/redteam/(inbox|outbox|inbox-archive|outbox-archive)/\*$")
+REDTEAM_LEAF = "redteam"  # pre-consolidation: <protocol-copy>/redteam (legacy detect + migrate)
+REDTEAM_DIR = f"{RUNTIME_ROOT}/{REDTEAM_LEAF}"
+REDTEAM_SUBDIRS = ("inbox", "outbox", "inbox-archive", "outbox-archive")
+CONFIG_NAME = "config.yml"
 
 
 def _proto_dir_name() -> str:
@@ -63,22 +74,22 @@ def _warn_dual_presence(root: Path) -> None:
               file=sys.stderr)
 
 
-def _packet_gitignore_lines(root: Path | None = None) -> list[str]:
-    # Relative to the workspace root from the script's actual location, so the
-    # lines match under reference flow (agents-boilerplate/.../redteam/...) too.
-    # Callers without a root get the legacy name-only form (same result when the
-    # copy sits at root level).
-    if root is None:
-        proto = _proto_dir_name()
-    else:
-        try:
-            proto = str(Path(__file__).parent.resolve().relative_to(Path(root).resolve()))
-        except ValueError:
-            proto = _proto_dir_name()
-    return [f"{proto}/redteam/inbox/*",
-            f"{proto}/redteam/outbox/*",
-            f"{proto}/redteam/inbox-archive/*",
-            f"{proto}/redteam/outbox-archive/*"]
+def _redteam_dir(root: Path) -> Path:
+    """Exchange location: .protocol/redteam (Q58-a). Sources (templates, docs)
+    stay in the protocol copy; only runtime (packets, config) moved out."""
+    return root / REDTEAM_DIR
+
+
+def _prune_stale_gitignore(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Drop ignore lines superseded by the single .protocol/ line. Returns
+    (kept, pruned). Exact/prefix matches only — never touches user lines."""
+    kept, pruned = [], []
+    for ln in lines:
+        if any(re.match(pat, ln) for pat in STALE_GITIGNORE_PATTERNS):
+            pruned.append(ln)
+        else:
+            kept.append(ln)
+    return kept, pruned
 
 AGENT_DIRECTIVE_FILES = [
     "AGENTS.md",
@@ -90,18 +101,20 @@ AGENT_DIRECTIVE_FILES = [
 DIRECTIVE_BLOCK = """\n\
 ### 🚦 Traffic-Light Team Collaboration Protocols
 
-1. **Single Source of Truth**: All active implementation plans MUST live in `{workspace}/plan.md`.
-2. **Auto-Archiving**: Before creating a new plan via `plan-greenteam`, if the current plan is `✅ COMPLETED`, move it to `{workspace}/archive/plan_YYYYMMDD_HHMM.md`.
+1. **Single Source of Truth**: All active implementation plans MUST live in `{workspace}/plan.md`. Every plan carries a `Plan-ID: <slug>-YYYYMMDD-HHMM` header (filename-derived, never reused) — cited in packets, defect rows, and stash listings so agent and user track the same plan.
+2. **Auto-Archiving**: Before creating a new plan via `plan-greenteam`, if the current plan is `✅ COMPLETED`, move it to `{workspace}/archive/plan_YYYYMMDD_HHMM.md`. If it is unfinished (`📋 PLANNED` / `⏳ IN_PROGRESS`), auto-stash it to `{workspace}/stash/plan_<plan-id>.md` instead — announce the Plan ID + restore command. Mid-flight work (Amber executing, Red packet open): warn with both Plan IDs and require explicit confirmation first.
 3. **Core Shortcuts** (aliases accepted everywhere):
-   - `plan-greenteam <prompt>` (`plan-green`): Green Team drafts a fresh `{workspace}/plan.md` (`📋 PLANNED`) detailing all affected files. Touches NO source code.
+   - `plan-greenteam <prompt>` (`plan-green`): Green Team drafts a fresh `{workspace}/plan.md` (`📋 PLANNED`, fresh Plan-ID) detailing all affected files. Touches NO source code.
+   - `plan-stash-greenteam` (`stash-green`): Park the active plan to `stash/` (status + progress preserved verbatim); workspace returns to no-active-plan.
+   - `plan-resume-greenteam <plan-id>` (`resume-green`): List `stash/` when no ID is given; restore the chosen plan to `plan.md` intact (a different active unfinished plan stashes first).
    - `review-greenteam` (`review-green`): Any agent/model playing planner QA-checks the plan (APPROVE → execute, REVISE → amend + re-review).
    - `execute-amberteam` (`exec-amber`): Amber Team inspects `{workspace}/plan.md`, summarizes it, and asks the user: *"Should the agent proceed with executing the plan and its tasks?"*
    - `review-amberteam` (`review-amber`): Green Team audits Amber Team's git diff and automated tests before clearing completion.
-   - `send-redteam` (`send-red`): Green Team builds a timestamped packet in `redteam/inbox`, delivers it if the red workspace is reachable, else asks the user to carry it.
+   - `send-redteam` (`send-red`): Green Team builds a timestamped packet in `.protocol/redteam/inbox`, delivers it if the red workspace is reachable, else asks the user to carry it.
    - `review-redteam` (`review-red`): Green Team reads the defect report, records verdict PASS (stays `✅ COMPLETED`) or FAIL (reopen, back to `⏳ IN_PROGRESS`, Amber fixes, re-audit), then archives the packet.
    - `verify-green-amber-red-team`: Green Team audits configs, packet states, and versions, then asks whether to realign.
    - Red Team (own session): `test-redteam` (`test-red`) plans + tests a packet; `finish-redteam` (`finish-red`) writes the outbox verdict; `recheck-redteam` (`recheck-red`) revisits inbox + outbox and asks what to do next.
-4. **Packets**: `redteam/inbox|outbox` hold ACTIVE timestamped packets (`packet_green|red_YYYYMMDD_HHMM`); `*-archive` holds inactive ones. New packets cross-ack the previous packet done; only acked-done packets archive. `redteam/config.yml` declares `side:` (green|red), reachability, and the redteam kill switch.
+4. **Packets**: `.protocol/redteam/inbox|outbox` hold ACTIVE timestamped packets (`packet_green|red_YYYYMMDD_HHMM`); `*-archive` holds inactive ones. New packets cross-ack the previous packet done; only acked-done packets archive. `.protocol/redteam/config.yml` declares `side:` (green|red), reachability, and the redteam kill switch.
 """.format(workspace=WORKSPACE_DIR)
 
 WORKSPACE_README = """# 🚦 Traffic-Light Multi-Agent Teaming Workspace (`{workspace}/`)
@@ -114,16 +127,19 @@ This directory is strictly **gitignored** and serves as the single source of tru
 
 | Color / Team | Persona | Responsibilities | Key Commands |
 |:---|:---|:---|:---|
-| **🟢 Green Team** | **Architect / Planner** | Analyzes specs, maps affected files, writes `plan.md`, audits implementation, runs the Red Team handoff, and triages Red Team verdicts. **Touches NO production code.** | `plan-greenteam`<br>`review-greenteam`<br>`review-amberteam`<br>`send-redteam`<br>`review-redteam`<br>`verify-green-amber-red-team` |
+| **🟢 Green Team** | **Architect / Planner** | Analyzes specs, maps affected files, writes `plan.md`, parks/resumes plans, audits implementation, runs the Red Team handoff, and triages Red Team verdicts. **Touches NO production code.** | `plan-greenteam`<br>`plan-stash-greenteam`<br>`plan-resume-greenteam`<br>`review-greenteam`<br>`review-amberteam`<br>`send-redteam`<br>`review-redteam`<br>`verify-green-amber-red-team` |
 | **🟠 Amber Team** | **Developer / Implementer** | Inspects the plan, confirms with user, implements code changes, runs tests, tracks task states, and fixes Red Team FAIL findings on re-open. | `execute-amberteam` |
-| **🔴 Red Team** | **Independent QA / Auditor** | Executes black-box tests, regression suites, and adversarial audits in an isolated sandbox. Reads own `redteam/inbox`, writes own `redteam/outbox`. | `test-redteam`<br>`finish-redteam`<br>`recheck-redteam` |
+| **🔴 Red Team** | **Independent QA / Auditor** | Executes black-box tests, regression suites, and adversarial audits in an isolated sandbox. Reads own `.protocol/redteam/inbox`, writes own `.protocol/redteam/outbox`. | `test-redteam`<br>`finish-redteam`<br>`recheck-redteam` |
 
 ---
 
 ## 🔄 End-to-End Collaboration Lifecycle
 
 ```
-[User: plan-greenteam <prompt>] ──> [🟢 Green Team drafts {workspace}/plan.md (📋 PLANNED)]
+[User: plan-greenteam <prompt>] ──> [🟢 Green Team drafts {workspace}/plan.md (📋 PLANNED, Plan-ID stamped)]
+                                                │         unfinished active plan → auto-stash to stash/ (announce ID + resume cmd)
+[User: plan-stash-greenteam] ───> [🟢 Park active plan.md → stash/plan_<plan-id>.md (progress intact)]
+[User: plan-resume-greenteam <id>] → [🟢 Restore stashed plan → plan.md (other active plan stashes first)]
                                                 │
 [User: review-greenteam] ──────> [🟢 Any planner QA-checks plan: APPROVE → proceed / REVISE → amend]
                                                 │
@@ -217,12 +233,15 @@ def detect_project_type(root: Path) -> str:
 def ensure_dirs(root: Path, *, dry_run: bool, quiet: bool) -> None:
     workspace = root / WORKSPACE_DIR
     archive = workspace / ARCHIVE_DIR
+    stash = workspace / STASH_DIR
     if dry_run:
-        _log(f"[DRY-RUN] Would create directories: {workspace}, {archive}", quiet=quiet)
+        _log(f"[DRY-RUN] Would create directories: {workspace}, {archive}, {stash}", quiet=quiet)
         return
     archive.mkdir(parents=True, exist_ok=True)
+    stash.mkdir(parents=True, exist_ok=True)
     _log(f"[CREATE] {workspace}", quiet=quiet)
     _log(f"[CREATE] {archive}", quiet=quiet)
+    _log(f"[CREATE] {stash}", quiet=quiet)
 
 
 LEDGER_NAME = "defects.md"
@@ -247,26 +266,28 @@ def ensure_ledger(root: Path, *, dry_run: bool, quiet: bool) -> None:
 
 def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool, side: str = "green") -> bool:
     gitignore = root / ".gitignore"
-    if not gitignore.exists():
-        content = ""
-    else:
-        content = _read_text(gitignore)
+    content = _read_text(gitignore) if gitignore.exists() else ""
 
-    wanted = [GITIGNORE_LINE] if side == "green" else []
-    wanted += _packet_gitignore_lines(root)
+    wanted = [GITIGNORE_LINE]  # one line covers workspace + exchange (Q59-a), both sides
     if (root / "agents-boilerplate").exists():
         wanted.append("agents-boilerplate/")
-    missing = [ln for ln in wanted if ln not in content.splitlines()]
-    if not missing:
-        _log("[OK] .gitignore already covers team workspace + packet contents", quiet=quiet)
+    lines = content.splitlines()
+    kept, pruned = _prune_stale_gitignore(lines)
+    missing = [ln for ln in wanted if ln not in kept]
+    if not missing and not pruned:
+        _log("[OK] .gitignore already covers .protocol/ runtime", quiet=quiet)
         return False
 
-    new_content = content.rstrip("\n") + "\n" + "\n".join(missing) + "\n"
     if dry_run:
         for ln in missing:
             _log(f"[DRY-RUN] Would append {ln!r} to {gitignore}", quiet=quiet)
+        for ln in pruned:
+            _log(f"[DRY-RUN] Would prune stale {ln!r} from {gitignore}", quiet=quiet)
         return True
-    gitignore.write_text(new_content, encoding="utf-8")
+    new_lines = kept + [ln for ln in missing if ln not in kept]
+    gitignore.write_text("\n".join(new_lines).rstrip("\n") + "\n", encoding="utf-8")
+    for ln in pruned:
+        _log(f"[PRUNE] stale {ln!r} superseded by {GITIGNORE_LINE!r}", quiet=quiet)
     _log(f"[UPDATE] {gitignore}", quiet=quiet)
     return True
 
@@ -280,25 +301,108 @@ def _proto_dir(root: Path) -> Path:
     return candidate if candidate.exists() else here
 
 
-def _read_config_side(proto: Path) -> str | None:
-    text = _read_text(proto / CONFIG_NAME)
+def _read_config_side(redteam: Path) -> str | None:
+    text = _read_text(redteam / CONFIG_NAME)
     match = re.search(r"^side:\s*(green|red)\s*$", text, re.MULTILINE)
     return match.group(1) if match else None
 
 
-def ensure_redteam(root: Path, *, side: str, dry_run: bool, quiet: bool) -> None:
-    """Create the redteam/ exchange skeleton + config.yml (side-stamped) in the
-    boilerplate copy. Packet contents are gitignored; skeleton + config are tracked."""
-    proto = _proto_dir(root)
+def _config_values(text: str) -> tuple[str, ...]:
+    """Effective config content: value lines only (comments/blank lines ignored,
+    so template comment drift never counts as customization)."""
+    return tuple(sorted(ln.strip() for ln in text.splitlines()
+                        if ln.strip() and not ln.strip().startswith("#")))
+
+
+def _default_config_values() -> set[tuple[str, ...]]:
+    """Value-line sets for untouched configs: both sides, old + new return_to."""
+    bases = set()
+    for side in ("green", "red"):
+        for return_to in ("redteam/outbox", ".protocol/redteam/outbox"):
+            bases.add(_config_values(
+                f"side: {side}\nredteam_enabled: true\nredteam_accessible: false\n"
+                f"redteam_path: null\nreturn_to: {return_to}\n"))
+    return bases
+
+
+def migrate_legacy_runtime(root: Path, *, dry_run: bool, quiet: bool) -> None:
+    """One-way move of pre-consolidation runtime into .protocol/. Whole-dir mv
+    (contents preserved, never copy-then-orphan). Both-sides-present = WARN and
+    stop (manual merge); legacy skeleton .gitkeep files stay in place."""
+    legacy_ws = root / WORKSPACE_LEAF
+    new_ws = root / WORKSPACE_DIR
+    if legacy_ws.exists() and not new_ws.exists():
+        if dry_run:
+            _log(f"[DRY-RUN] Would migrate {legacy_ws} -> {new_ws}", quiet=quiet)
+        else:
+            new_ws.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(legacy_ws), str(new_ws))
+            _log(f"[MIGRATE] {legacy_ws} -> {new_ws} (plans, ledgers, stash intact)", quiet=quiet)
+    elif legacy_ws.exists() and new_ws.exists():
+        print(f"[WARN] both {legacy_ws} and {new_ws} exist — merge manually, then drop the legacy dir.",
+              file=sys.stderr)
+
+
+def _legacy_redteam_has_content(legacy: Path) -> bool:
+    """True when the pre-consolidation exchange holds anything beyond the
+    tracked skeleton (.gitkeep files + untouched template config)."""
+    if not legacy.exists():
+        return False
     for sub in REDTEAM_SUBDIRS:
-        target = proto / sub
+        for item in (legacy / sub).glob("*") if (legacy / sub).exists() else []:
+            if item.name != ".gitkeep":
+                return True
+    cfg = legacy / CONFIG_NAME
+    return cfg.exists() and _config_values(_read_text(cfg)) not in _default_config_values()
+
+
+def migrate_legacy_redteam(root: Path, *, dry_run: bool, quiet: bool) -> None:
+    """Move pre-consolidation exchange (<protocol-copy>/redteam) into
+    .protocol/redteam. Moves packet contents + config.yml only; tracked
+    skeleton (.gitkeep) stays so vendor-copy diffs stay clean."""
+    proto = _proto_dir(root)
+    legacy = proto / REDTEAM_LEAF
+    new = _redteam_dir(root)
+    if not legacy.exists():
+        return
+    moves: list[tuple[Path, Path]] = []
+    for sub in REDTEAM_SUBDIRS:
+        for item in sorted((legacy / sub).glob("*")) if (legacy / sub).exists() else []:
+            if item.name != ".gitkeep":
+                moves.append((item, new / sub / item.name))
+    legacy_cfg = legacy / CONFIG_NAME
+    if legacy_cfg.exists() and not (new / CONFIG_NAME).exists():
+        # Migrate only customized configs (side/reachability edits). An
+        # untouched template — however commented — is equivalent to what
+        # ensure_redteam stamps, so fresh vendor copies don't churn.
+        if _config_values(_read_text(legacy_cfg)) not in _default_config_values():
+            moves.append((legacy_cfg, new / CONFIG_NAME))
+    if not moves:
+        return
+    for src, dst in moves:
+        if dry_run:
+            _log(f"[DRY-RUN] Would migrate {src} -> {dst}", quiet=quiet)
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src), str(dst))
+    if not dry_run:
+        _log(f"[MIGRATE] exchange {legacy} -> {new} (skeleton .gitkeep files left in place)", quiet=quiet)
+
+
+def ensure_redteam(root: Path, *, side: str, dry_run: bool, quiet: bool) -> None:
+    """Create the .protocol/redteam exchange skeleton + config.yml (side-stamped).
+    Everything under .protocol/ is gitignored (single line); config holds LOCAL
+    values so ignoring it is intended."""
+    redteam = _redteam_dir(root)
+    for sub in REDTEAM_SUBDIRS:
+        target = redteam / sub
         if dry_run:
             _log(f"[DRY-RUN] Would create directory: {target}", quiet=quiet)
         else:
             target.mkdir(parents=True, exist_ok=True)
-    _log(f"[CREATE] {proto / 'redteam'} skeleton", quiet=quiet)
-    cfg = proto / CONFIG_NAME
-    existing = _read_config_side(proto)
+    _log(f"[CREATE] {redteam} skeleton", quiet=quiet)
+    cfg = redteam / CONFIG_NAME
+    existing = _read_config_side(redteam)
     # Never clobber reachability settings: only stamp side on fresh files, or
     # when --side was passed explicitly and differs.
     if dry_run:
@@ -323,7 +427,7 @@ side: {side}
 redteam_enabled: true
 redteam_accessible: false
 redteam_path: null
-return_to: redteam/outbox
+return_to: .protocol/redteam/outbox
 """
 
 
@@ -411,6 +515,7 @@ PLAN_TEMPLATES: dict[str, str] = {
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM` (stamped at creation; filename-derived, never reused — cited in packets, defect rows, and stash listings so agents and users track the same plan)
 
 ## 1. Problem Context & Architectural Scope
 [Brief explanation of the objective, constraints, and architecture]
@@ -435,6 +540,7 @@ pytest
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM` (stamped at creation; filename-derived, never reused — cited in packets, defect rows, and stash listings so agents and users track the same plan)
 
 ## 1. Problem Context & Architectural Scope
 [API contract, schema changes, business logic]
@@ -460,6 +566,7 @@ python manage.py migrate --check
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM` (stamped at creation; filename-derived, never reused — cited in packets, defect rows, and stash listings so agents and users track the same plan)
 
 ## 1. Problem Context & Architectural Scope
 [UI/UX changes, component architecture, state management]
@@ -485,6 +592,7 @@ npm run build
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM` (stamped at creation; filename-derived, never reused — cited in packets, defect rows, and stash listings so agents and users track the same plan)
 
 ## 1. Problem Context & Architectural Scope
 [Flutter/Dart changes, offline sync, native integration]
@@ -510,6 +618,7 @@ flutter build apk --release
 > **Planner (Green Team)**: <Agent Name> (Timestamp)
 > **Executor (Amber Team)**: Pending
 > **Active Task**: None
+> **Plan-ID**: `<slug>-YYYYMMDD-HHMM` (stamped at creation; filename-derived, never reused — cited in packets, defect rows, and stash listings so agents and users track the same plan)
 
 ## 1. Problem Context & Architectural Scope
 [Networking, containers, CI/CD, orchestration]
@@ -537,7 +646,7 @@ curl -f http://localhost/health
 def generate_plan(root: Path, title: str, template: str, *, dry_run: bool, quiet: bool) -> bool:
     plan_path = root / WORKSPACE_DIR / PLAN_NAME
     if plan_path.exists():
-        _log(f"[SKIP] {plan_path} already exists; use plan-greenteam or archive it first", quiet=quiet)
+        _log(f"[SKIP] {plan_path} already exists; use plan-greenteam (auto-stash) or plan-stash-greenteam first", quiet=quiet)
         return False
 
     body = PLAN_TEMPLATES.get(template, PLAN_TEMPLATES["generic"])
@@ -560,9 +669,7 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
     workspace = root / WORKSPACE_DIR
     plan_path = workspace / PLAN_NAME
     gitignore = root / ".gitignore"
-    proto = _proto_dir(root)
     gi_lines = _read_text(gitignore).splitlines() if gitignore.exists() else []
-    packet_lines = _packet_gitignore_lines(root)
 
     legacy = root / LEGACY_WORKSPACE_DIR
     if legacy.exists():
@@ -570,17 +677,26 @@ def status_check(root: Path, *, json_output: bool, quiet: bool) -> dict:
         print(f"[WARN] legacy workspace {legacy} found (pre-Q39 name). "
               "Migrate: mv green_amber_red_teams green_amber_red_workspace, re-run init, "
               "drop the stale .gitignore line.", file=sys.stderr)
+    pre_consolidation_ws = root / WORKSPACE_LEAF
+    if pre_consolidation_ws.exists():
+        print(f"[WARN] pre-consolidation runtime {pre_consolidation_ws} found. "
+              f"Migrate: mv {WORKSPACE_LEAF} {WORKSPACE_DIR}, re-run init.", file=sys.stderr)
+    legacy_redteam = _proto_dir(root) / REDTEAM_LEAF
+    if _legacy_redteam_has_content(legacy_redteam):
+        print(f"[WARN] pre-consolidation exchange {legacy_redteam} holds content. "
+              f"Re-run init to migrate packet contents + customized config.yml to {REDTEAM_DIR}/.", file=sys.stderr)
+    redteam = _redteam_dir(root)
     result: dict = {
         "workspace_dir": str(workspace),
         "workspace_exists": workspace.exists(),
         "dual_presence": str(_dual_presence(root)) if _dual_presence(root) else None,
         "legacy_workspace_found": legacy.exists(),
+        "pre_consolidation_runtime_found": pre_consolidation_ws.exists(),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
-        # Red side correctly omits the plan-workspace line: expect it only on green.
-        "gitignore_ok": (GITIGNORE_LINE in gi_lines) if _read_config_side(proto) != "red" else True,
-        "packet_gitignore_ok": all(ln in gi_lines for ln in packet_lines),
-        "side": _read_config_side(proto),
-        "redteam_skeleton_ok": all((proto / sub).exists() for sub in REDTEAM_SUBDIRS),
+        "stash_exists": (workspace / STASH_DIR).exists(),
+        "gitignore_ok": GITIGNORE_LINE in gi_lines,
+        "side": _read_config_side(redteam),
+        "redteam_skeleton_ok": all((redteam / sub).exists() for sub in REDTEAM_SUBDIRS),
         "readme_exists": (workspace / README_NAME).exists(),
         "plan_exists": plan_path.exists(),
         "ledger_exists": (workspace / LEDGER_NAME).exists(),
@@ -684,8 +800,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     _warn_dual_presence(root)
-    proto = _proto_dir(root)
-    side = args.side or _read_config_side(proto) or "green"
+    migrate_legacy_runtime(root, dry_run=args.dry_run, quiet=args.quiet)
+    migrate_legacy_redteam(root, dry_run=args.dry_run, quiet=args.quiet)
+    # Side resolves AFTER migration so a migrated customized config keeps its stamp.
+    side = args.side or _read_config_side(_redteam_dir(root)) or "green"
     if side == "green":
         ensure_dirs(root, dry_run=args.dry_run, quiet=args.quiet)
         ensure_ledger(root, dry_run=args.dry_run, quiet=args.quiet)
@@ -710,7 +828,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"   Plan file: {root / WORKSPACE_DIR / PLAN_NAME}")
             print("   Next step: run `plan-greenteam <prompt>` or `execute-amberteam`.")
         else:
-            print(f"   Exchange: {_proto_dir(root) / 'redteam'} (side: red)")
+            print(f"   Exchange: {_redteam_dir(root)} (side: red)")
             print("   Next step: wait for an inbox packet, then run `test-redteam`.")
     return 0
 

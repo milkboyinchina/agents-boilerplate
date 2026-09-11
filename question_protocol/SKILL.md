@@ -15,7 +15,7 @@ This protocol is **conversation-scoped and compaction-safe**:
 - `Q1, Q2...` never reuse mid-conversation; reset only on new conversation.
 - Options are `Qn-a/b/c` case-insensitive (binary choices included).
 - Free-form: `Qn:`, `Qn.`, `Qn=` are aliases. Multi-select: comma or plus. Skip: `Qn: skip` / `skip Qn`.
-- Counter persists in `question_workspace/state.json`; recover via transcript scan after compaction.
+- Counter persists in `.protocol/question_workspace/state.json`; recover via transcript scan after compaction.
 
 ---
 

@@ -1,4 +1,4 @@
-# Defect Ledger — live file: `green_amber_red_workspace/defects.md` (runtime, gitignored)
+# Defect Ledger — live file: `.protocol/green_amber_red_workspace/defects.md` (runtime, gitignored)
 
 > Single-writer-per-field. Red writes FINDINGS (via defect reports only — never
 > this file). Green transcribes findings here at `review-redteam` and owns every

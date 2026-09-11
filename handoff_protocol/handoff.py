@@ -7,7 +7,7 @@ Manual triggers:
     /handoff-resume -> python3 handoff_protocol/handoff.py resume
 
 A zero-dependency Python 3 CLI that creates, archives, and resumes
-handoff files inside the project-local `handoff_workspace/` folder.
+handoff files inside the project-local `.protocol/handoff_workspace/` folder.
 """
 
 from __future__ import annotations
@@ -24,10 +24,13 @@ from typing import Any
 
 __version__ = "1.1.0"
 
-WORKSPACE_DIR = "handoff_workspace"
+RUNTIME_ROOT = ".protocol"  # all runtime state lives here (single .gitignore line)
+WORKSPACE_LEAF = "handoff_workspace"  # pre-consolidation name: legacy detect + migrate
+WORKSPACE_DIR = f"{RUNTIME_ROOT}/{WORKSPACE_LEAF}"
 ARCHIVE_DIR = "archive"
 TEMPLATE_NAME = "handoff_template.md"
-GITIGNORE_LINE = f"{WORKSPACE_DIR}/"
+GITIGNORE_LINE = f"{RUNTIME_ROOT}/"
+STALE_GITIGNORE_LINES = (f"{WORKSPACE_LEAF}/",)
 # Pre-split runtime name. Frozen intentionally: detected (with mv hint), never created.
 # NOTE: repo-wide renames must EXCLUDE this line.
 LEGACY_WORKSPACE_DIR = "handoff_protocol"
@@ -40,7 +43,7 @@ AGENT_DIRECTIVE_FILES = [
 ]
 
 DIRECTIVE_BLOCK = """\n\
-### 🔄 Session Handoff Protocol (`handoff_workspace/`)
+### 🔄 Session Handoff Protocol (`.protocol/handoff_workspace/`)
 
 Manual triggers only: `/handoff-start` captures state (`handoff.py start`), `/handoff-resume` continues it (`handoff.py resume`), `done` archives. All files stay project-local and gitignored.
 """.strip() + "\n"
@@ -206,19 +209,41 @@ def ensure_gitignore(root: Path, *, dry_run: bool, quiet: bool) -> bool:
     wanted = [GITIGNORE_LINE]
     if (root / "agents-boilerplate").exists():
         wanted.append("agents-boilerplate/")
-    missing = [ln for ln in wanted if ln not in lines]
-    if not missing:
-        _log("[OK] .gitignore already covers handoff workspace", quiet=quiet)
+    kept = [ln for ln in lines if ln not in STALE_GITIGNORE_LINES]
+    pruned = [ln for ln in lines if ln in STALE_GITIGNORE_LINES]
+    missing = [ln for ln in wanted if ln not in kept]
+    if not missing and not pruned:
+        _log("[OK] .gitignore already covers .protocol/ runtime", quiet=quiet)
         return False
 
-    new_content = content.rstrip("\n") + "\n" + "\n".join(missing) + "\n"
     if dry_run:
         for ln in missing:
             _log(f"[DRY-RUN] Would append {ln!r} to {gitignore}", quiet=quiet)
+        for ln in pruned:
+            _log(f"[DRY-RUN] Would prune stale {ln!r} from {gitignore}", quiet=quiet)
         return True
-    gitignore.write_text(new_content, encoding="utf-8")
+    gitignore.write_text("\n".join(kept + [ln for ln in missing if ln not in kept]).rstrip("\n") + "\n", encoding="utf-8")
+    for ln in pruned:
+        _log(f"[PRUNE] stale {ln!r} superseded by {GITIGNORE_LINE!r}", quiet=quiet)
     _log(f"[UPDATE] {gitignore}", quiet=quiet)
     return True
+
+
+def migrate_legacy_runtime(root: Path, *, dry_run: bool, quiet: bool) -> None:
+    """One-way move of the pre-consolidation workspace into .protocol/.
+    Whole-dir mv (contents preserved); both-sides-present = WARN, manual merge."""
+    legacy = root / WORKSPACE_LEAF
+    new = root / WORKSPACE_DIR
+    if legacy.exists() and not new.exists():
+        if dry_run:
+            _log(f"[DRY-RUN] Would migrate {legacy} -> {new}", quiet=quiet)
+        else:
+            new.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(legacy), str(new))
+            _log(f"[MIGRATE] {legacy} -> {new} (handoffs, archive intact)", quiet=quiet)
+    elif legacy.exists() and new.exists():
+        print(f"[WARN] both {legacy} and {new} exist — merge manually, then drop the legacy dir.",
+              file=sys.stderr)
 
 
 def list_handoffs(workspace: Path, *, include_archive: bool = False) -> list[Path]:
@@ -261,9 +286,9 @@ def detect_git_status(root: Path) -> str:
 
 
 def detect_plan_status(root: Path) -> str:
-    plan = root / "green_amber_red_workspace" / "plan.md"
+    plan = root / ".protocol" / "green_amber_red_workspace" / "plan.md"
     if not plan.exists():
-        return "No green_amber_red_workspace/plan.md detected."
+        return "No .protocol/green_amber_red_workspace/plan.md detected."
     text = _read_text(plan)
     status_match = re.search(r"\*\*Lifecycle Status\*\*:\s*([^\n]+)", text)
     active_match = re.search(r"\*\*Active Task\*\*:\s*([^\n]+)", text)
@@ -444,6 +469,10 @@ def done_handoff(args: argparse.Namespace, root: Path) -> int:
 
 def status_handoff(args: argparse.Namespace, root: Path) -> int:
     _warn_legacy(root)
+    pre = root / WORKSPACE_LEAF
+    if pre.exists():
+        print(f"[WARN] pre-consolidation runtime {pre} found. "
+              f"Migrate: mv {WORKSPACE_LEAF} {WORKSPACE_DIR}, re-run handoff init.", file=sys.stderr)
     workspace = root / WORKSPACE_DIR
     active = find_active_handoff(workspace)
     archived = sorted((workspace / ARCHIVE_DIR).glob("handoff-*.md")) if (workspace / ARCHIVE_DIR).exists() else []
@@ -454,6 +483,7 @@ def status_handoff(args: argparse.Namespace, root: Path) -> int:
         "workspace_exists": workspace.exists(),
         "dual_presence": str(dup) if dup else None,
         "legacy_workspace_found": _is_legacy_workspace(root),
+        "pre_consolidation_runtime_found": (root / WORKSPACE_LEAF).exists(),
         "archive_exists": (workspace / ARCHIVE_DIR).exists(),
         "gitignore_ok": GITIGNORE_LINE in _read_text(root / ".gitignore").splitlines() if (root / ".gitignore").exists() else False,
         "directives_ok": any(DIRECTIVE_BLOCK.strip() in _read_text(root / f).strip()
@@ -517,6 +547,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "start":
         _warn_dual_presence(root)
         _warn_legacy(root)
+        migrate_legacy_runtime(root, dry_run=args.dry_run, quiet=args.quiet)
         agent_files = detect_agent_files(root)
         if agent_files:
             inject_directives(root, agent_files, dry_run=args.dry_run, quiet=args.quiet)

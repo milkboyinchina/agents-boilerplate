@@ -107,7 +107,7 @@ On receiving a reply, the agent MUST:
 ```markdown
 Resolved: Q1-a, Q2-custom(120s), Q3!-open.
 ```
-4. Update `question_workspace/state.json` (`next_id`, open/closed status).
+4. Update `.protocol/question_workspace/state.json` (`next_id`, open/closed status).
 
 ---
 
@@ -127,12 +127,12 @@ Resolved: Q1-a, Q2-custom(120s), Q3!-open.
 
 Question state is file-backed so context summarization (`/compact`, `/clear` summaries, model switches) does not lose the counter:
 
-* State file: `question_workspace/state.json` (gitignored after bootstrap):
+* State file: `.protocol/question_workspace/state.json` (gitignored after bootstrap):
 ```json
 {"next_id": 6, "epoch": 2, "open": [{"id": "Q2", "text": "Cache TTL?"}], "archived_epochs": ["E1"]}
 ```
 * Recovery rule on resume (`/handoff-resume` or fresh session):
-  1. Read `state.json` + active `handoff_workspace/` handoff (Open Questions section, if present).
+  1. Read `state.json` + active `.protocol/handoff_workspace/` handoff (Open Questions section, if present).
   2. Scan visible transcript for highest `Qn` / `En-Qn`.
   3. `next_id = max(state.next_id, transcript_max + 1, handoff_max + 1)`.
   4. Announce: `Recovered at Qx (epoch En), y open carried over.` Then re-list open Qs with original numbers and full text.

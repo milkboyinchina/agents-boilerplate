@@ -113,7 +113,7 @@ Three agents walk into a codebase. Thanks to this protocol, they don't all start
 - **🟠 Amber Team** — Developer / Executor: reviews the plan, asks to proceed, writes code.
 - **🔴 Red Team** — Independent QA / Auditor: adversarial black-box verification via timestamped packets.
 
-10 commands (aliases accepted) — see the command table in `green_amber_red_team_protocol/README.md`.
+12 commands (aliases accepted) — see the command table in `green_amber_red_team_protocol/README.md`.
 
 ### Usage
 
@@ -130,9 +130,9 @@ Or tell your agent:
 Your agent has the memory of a goldfish after a context window. This boilerplate provides **project-local session continuity**:
 
 - **Manual triggers only**: `/handoff-start` and `/handoff-resume`.
-- **Single output location**: `handoff_workspace/` inside the project workspace.
+- **Single output location**: `.protocol/handoff_workspace/` inside the project workspace.
 - **9-field template**: captures active task, files changed, verification, rollback, blockers, and next steps.
-- **Auto-detects** `green_amber_red_workspace/plan.md` status when present.
+- **Auto-detects** `.protocol/green_amber_red_workspace/plan.md` status when present.
 
 ### Usage
 
@@ -147,7 +147,7 @@ Five questions, one short line, zero "wait, which question was that?" This boile
 - **Conversation-scoped labels**: `Q1, Q2...` never reuse mid-conversation — skipped questions stay answerable later.
 - **Choice labels**: `Q1-a/b/c` (case-insensitive), including binary `yes/no`.
 - **Free-form overrides**: `Q1:`, `Q1.`, `Q1=` aliases, multi-select (`Q1-a,c`), `skip Qn`.
-- **Compaction-safe**: counter in `question_workspace/state.json` + transcript scan recovery.
+- **Compaction-safe**: counter in `.protocol/question_workspace/state.json` + transcript scan recovery.
 - **Re-baseline**: at >99 closed, agent proposes `Archive Q1-Q99 and re-baseline to Q1?` (approval only).
 
 ### Usage
@@ -174,7 +174,7 @@ See [Quick Start](#-quick-start): copy the folder, then `python3 tier_routing_pr
 
 ## 🗺️ Future roadmap
 
-Planned structural change (tracked in [`TODO.md`](./TODO.md)): consolidate all runtime state under a hidden `.protocol/` dir — one `.gitignore` line instead of ~10, and a clean workspace root.
+Structural change in progress (tracked in [`TODO.md`](./TODO.md), item 1): all runtime state lives under a hidden `.protocol/` dir — one `.gitignore` line instead of ~10, and a clean workspace root.
 
 Six protocols on the drawing board (tracked in [`TODO.md`](./TODO.md) — design questions open, nothing built yet):
 

@@ -17,7 +17,7 @@ application source code — endpoints, binaries, and schemas in `artifacts/` onl
 
 ## 3. Isolation rules
 
-- Work strictly inside your `redteam/` folders. Never navigate outside them.
+- Work strictly inside your `.protocol/redteam/` folders. Never navigate outside them.
 - Never output secrets, credentials, or private internal logic — black-box
   telemetry only (status codes, latency, bodies, pass/fail).
 - Never rewrite report history: findings append, author-tagged.
@@ -26,8 +26,8 @@ application source code — endpoints, binaries, and schemas in `artifacts/` onl
 
 Map to your sandbox's local equivalents (declare below; defaults shown):
 
-- New mission arrived in `redteam/inbox/` → plan it (`test-redteam`).
-- Mission done → write the verdict packet to `redteam/outbox/` (`finish-redteam`).
+- New mission arrived in `.protocol/redteam/inbox/` → plan it (`test-redteam`).
+- Mission done → write the verdict packet to `.protocol/redteam/outbox/` (`finish-redteam`).
 - Prior report to revisit → (`recheck-redteam`): read own inbox + outbox, ask the
   user whether to plan a retest or take other action.
 

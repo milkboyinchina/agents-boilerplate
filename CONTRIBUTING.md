@@ -25,7 +25,7 @@ cp -r question_protocol /path/to/your-project/
 
 **What must stay structurally intact:**
 
-* The **source vs runtime split**: every boilerplate is source `*_protocol/` (tracked) plus runtime `*_workspace/` (gitignored) with unmistakably different names — `green_amber_red_team_protocol/` vs `green_amber_red_workspace/`, `handoff_protocol/` vs `handoff_workspace/`, and so on. Renaming one side without the other breaks installs — see the `📁` changelog entries for the full lesson.
+* The **source vs runtime split**: every boilerplate is source `*_protocol/` (tracked) plus runtime under `.protocol/` (gitignored by one line) — `.protocol/green_amber_red_workspace/`, `.protocol/redteam/`, and so on. Renaming one side without the other breaks installs — see the `📁` changelog entries for the full lesson.
 * Registry/file schemas (`routing.yaml` subset, `state.json` shapes) — CLIs parse a fixed subset; checklists enforce it.
 
 ---
@@ -88,12 +88,12 @@ Keep local adaptations in clearly separated commits (rename vs behavior vs regis
 
 ## 5. What NOT to commit
 
-Runtime state is per-machine and gitignored by each bootstrap CLI. Never force-add:
+Runtime state is per-machine and gitignored by each bootstrap CLI (single `.protocol/` line). Never force-add anything under `.protocol/`:
 
-* `question_workspace/state.json`
-* `tier_routing_workspace/heartbeat.json`, `tier_routing_workspace/routing_state.json`
-* `green_amber_red_workspace/` workspaces, `handoff_workspace/handoff-*.md` active files
-* `green_amber_red_team_protocol/redteam/{inbox,outbox,inbox-archive,outbox-archive}/*` packet contents (both sides)
+* `.protocol/question_workspace/state.json`
+* `.protocol/tier_routing_workspace/heartbeat.json`, `.protocol/tier_routing_workspace/routing_state.json`
+* `.protocol/green_amber_red_workspace/` workspaces, `.protocol/handoff_workspace/handoff-*.md` active files
+* `.protocol/redteam/{inbox,outbox,inbox-archive,outbox-archive}/*` packet contents (both sides)
 * `__pycache__/`, `*.pyc`
 
 Reviewable history (`routing_updates/pending-*.md`, archived handoffs/plans) **is** committed — that's the audit trail, not state.
